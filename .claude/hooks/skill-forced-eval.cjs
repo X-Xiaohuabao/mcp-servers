@@ -3,7 +3,7 @@
  * UserPromptSubmit Hook - 强制技能评估（Claude Code 版，动态扫描）
  * 功能: 开发场景下提升技能激活率
  * 与 ZCode 版的差异：Claude 协议下 stdout 纯文本直接注入上下文（无需 additionalContext JSON）
- * 技能清单运行时扫描 .claude/skills/*/SKILL.md 的 frontmatter 动态生成
+ * 技能清单运行时扫描 .claude/skills 下各 SKILL.md 的 frontmatter 动态生成
  */
 
 const fs = require('fs');
