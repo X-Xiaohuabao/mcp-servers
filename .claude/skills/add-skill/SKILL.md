@@ -65,7 +65,7 @@ description: |
 
 ## 新增技能后
 
-1. 同步更新 `.claude/hooks/skill-forced-eval.cjs` 的技能列表
+1. 技能清单由 hook 动态扫描各 SKILL.md frontmatter 生成，无需手动维护列表；确认 frontmatter 含 `触发词` 行即可
 2. 触发词与技能描述保持一致
 3. 如涉及命令，补充到 `.claude/commands/`
 4. 不与其他技能职责重复

@@ -125,7 +125,7 @@ if (checkOnly) {
   }
 
   if (missing.length > 0) console.error(`缺少: ${missing.join(', ')}`);
-  if (extra.length > 0) console.error(`多余: ${extra.map(toRelativeSafe).join(', ')}`);
+  if (extra.length > 0) console.error(`多余: ${extra.map((f) => f.relativeToTargetRoot.split(path.sep).join('/')).join(', ')}`);
   if (changed.length > 0) console.error(`不一致: ${changed.join(', ')}`);
   console.error('请运行 node scripts/sync-agent-config.mjs');
   process.exit(1);

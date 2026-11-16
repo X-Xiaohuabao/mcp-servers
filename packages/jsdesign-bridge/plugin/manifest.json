@@ -1,8 +1,8 @@
 {
   "name": "JsDesign Token Bridge",
-  "id": "jsdesign-token-bridge",
-  "api": "1.0.0",
+  "id": "2611161715jsd",
+  "api": "2.0.0",
   "main": "code.js",
   "ui": "ui.html",
-  "editorType": ["design"]
+  "version": "0.1.0"
 }

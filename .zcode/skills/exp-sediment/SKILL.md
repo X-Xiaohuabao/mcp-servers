@@ -18,7 +18,7 @@ description: |
 
 把隐性知识转化为显性资产，下次遇到同样问题不必重新踩坑。
 
-适用仓库：（RN + 鸿蒙双端 monorepo）。
+适用仓库：mcp-servers（MCP 集成仓库）。
 
 ## 经验分类
 
@@ -48,7 +48,7 @@ description: |
 4. **确认**：把建议列给用户，用户决定是否落地
 
 5. **落盘**
-   - 更新 skill：同时更新 `.zcode/hooks/skill-forced-eval.cjs` 的触发词
+   - 更新 skill：触发词维护在 SKILL.md frontmatter 的 `触发词` 行，hook 动态扫描自动生效，无需改 hook
    - 更新 `AGENTS.md`：只放硬性约束
    - 经验文件：`docs/experience/YYYY-MM/YYYY-MM-DD-<简述>.md`
 
@@ -59,7 +59,7 @@ description: |
 - **背景**：什么场景
 - **原因**：为什么会这样（Why）
 - **做法**：正确做法是什么
-- **适用端**：RN / 鸿蒙 / 共享包 / 双端
+- **适用范围**：插件侧 / server 侧 / 仓库级流程
 
 ## 不沉淀的内容
 

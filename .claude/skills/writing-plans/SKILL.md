@@ -7,7 +7,7 @@ description: |
   - 需求转任务清单
   - 多步骤开发前制定计划
   - 评估工作量与依赖
-  - 生成 docs/tasks/<端>/active 台账（rn / harmony / shared，规则见 docs/tasks/README.md）
+  - 生成 docs/tasks/<集成名>/active 台账（目录与 packages/ 集成包对齐，规则见 task-tracker 技能）
 
   触发词：写计划、制定计划、实施计划、拆解任务、可执行计划、开发计划
 ---
@@ -26,20 +26,20 @@ description: |
 ## 任务结构
 
 ```markdown
-### T-001 实现 H5 缓存命中策略
+### T-001 定稿协议消息 schema
 
-- 目标：按版本号与过期时间判断缓存是否可用
-- 落点：packages/core/src/cache/cachePolicy.ts（或 RN 侧过渡实现）
+- 目标：定义插件 ↔ daemon 的消息结构与字段
+- 落点：packages/jsdesign-bridge/server/src/protocol/messages.ts
 - 依赖：无
-- 验证：单元测试覆盖命中/过期/版本不匹配
-- 备注：协议需与鸿蒙端对齐
+- 验证：tsc 通过，两端口径一致（插件侧 types.ts 镜像同步）
+- 备注：字段以控制台实测为准（docs/api-notes.md）
 ```
 
 ## 拆解步骤
 
 1. 读需求与现有代码
 2. 列出涉及的文件与模块
-3. 按"共享逻辑 → RN → 鸿蒙 → 联调"排序
+3. 按依赖方向排序：先 protocol/类型，后 daemon 与 mcp；先插件数据源，后 server 消费（见 bridge-dev 技能）
 4. 每个任务给出验证方式
 5. 标注不确定项与需要确认的问题
 
@@ -55,13 +55,13 @@ description: |
 - [ ] 每个任务有唯一编号
 - [ ] 每个任务有完成标准
 - [ ] 每个任务有验证方式
-- [ ] 涉及两端的任务已标注
+- [ ] 涉及插件与 server 两侧的任务已标注
 - [ ] 不确定项已列出
 - [ ] 任务之间依赖清晰
 
 ## 落盘
 
-- 写入 `docs/tasks/<端>/active/`
+- 写入 `docs/tasks/<集成名>/active/`（新建集成包时同步建目录，见 task-tracker）
 - 使用 `[ ]` / `[x]` 标记进度
 - 每轮完成后更新，不集中补记
 
