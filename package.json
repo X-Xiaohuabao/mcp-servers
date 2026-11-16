@@ -1,0 +1,10 @@
+{
+  "name": "mcp-servers",
+  "version": "0.0.1",
+  "private": true,
+  "description": "X-Xiaohuabao 的 MCP 集成仓库",
+  "scripts": {
+    "agent:sync": "node scripts/sync-agent-config.mjs",
+    "agent:sync:check": "node scripts/sync-agent-config.mjs --check"
+  }
+}
