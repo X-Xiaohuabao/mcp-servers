@@ -30,17 +30,18 @@ description: |
 
 ## 目录结构
 
-MCP 集成仓库，任务平铺管理（仓库无端维度，按集成区分靠文档「集成」字段）：
+任务按**集成**分目录，与 packages/ 下的集成包一一对应（新建集成包时同步建任务目录）：
 
 ```
 {项目根目录}/
 └── docs/
     └── tasks/
-        ├── active/            # 进行中：task-20260121-153045-用户反馈.md
+    └── jsdesign-bridge/       # 目录名 = packages/ 下的集成包名
+        ├── active/            # 进行中：task-20260121-153045-xxx.md
         └── archive/           # 已完成：2026-01/task-xxx.md（按月归档）
 ```
 
-**归属区分**：仓库无端维度；任务属于哪个集成（如 jsdesign-bridge）写在文档「集成」字段，目录不按集成分（每集成任务量小，平铺足够）。
+**动态新建规则**：在 packages/ 下新建集成包时，同步创建 docs/tasks/<集成名>/{active,archive}——任务目录跟随包结构生长；删除/迁移集成包时任务目录随之处理。文档内仍保留「集成」字段双保险。
 
 ## 文档模板
 
@@ -246,10 +247,10 @@ MCP 集成仓库，任务平铺管理（仓库无端维度，按集成区分靠�
 
 **步骤**：
 ```bash
-# 1. 确保目录存在
-mkdir -p docs/tasks/{active,archive}
+# 1. 确保目录存在（目录名 = packages/ 下的集成包名）
+mkdir -p docs/tasks/<集成名>/active docs/tasks/<集成名>/archive
 
-TASK_DIR="docs/tasks/active"
+TASK_DIR="docs/tasks/<集成名>/active"   # 如 docs/tasks/jsdesign-bridge/active
 
 # 3. 生成文件名
 # 格式: task-{YYYYMMdd-HHMMSS}-{任务简称}.md
@@ -294,17 +295,20 @@ PERCENT=$((DONE * 100 / TOTAL))
 
 **步骤**：
 ```bash
-# 遍历活跃任务
-for file in docs/tasks/active/*.md; do
+# 按集成遍历
+for intg in $(ls docs/tasks); do
+  [ "$intg" = "archive" ] && continue
+  for file in docs/tasks/$intg/active/*.md; do
   [ -e "$file" ] || continue
   TITLE=$(grep "^# 任务：" "$file" | sed 's/^# 任务：//')
   STATUS=$(grep "^\*\*状态\*\*:" "$file" | sed 's/.*: //')
   PROGRESS=$(grep "^\*\*已完成\*\*:" "$file" | sed 's/.*: //')
 
-  echo "📄 $TITLE"
-  echo "   状态: $STATUS | 进度: $PROGRESS"
-  echo "   文件: $file"
-  echo ""
+    echo "📄 [$intg] $TITLE"
+    echo "   状态: $STATUS | 进度: $PROGRESS"
+    echo "   文件: $file"
+    echo ""
+  done
 done
 ```
 
@@ -316,7 +320,7 @@ done
 ```bash
 # 1. 确定要恢复的任务
 if [ 用户指定了任务名 ]; then
-  TASK_FILE=$(find docs/tasks/active -name "*{用户指定的关键词}*.md" | head -1)
+  TASK_FILE=$(find docs/tasks -path "*/active/*" -name "*{用户指定的关键词}*.md" | head -1)
 else
   TASK_FILE=$(ls -t docs/tasks/active/*.md 2>/dev/null | head -1)  # 最新的
 fi
@@ -425,12 +429,13 @@ echo -e "### $CURRENT_TIME\n**变更类型**: 问题记录\n\n**变更内容**:\
 # 1. 更新状态
 sed -i "s/^\*\*状态\*\*:.*/\*\*状态\*\*: 🔵 已完成/" "$TASK_FILE"
 
-# 2. 移动到归档目录（按月）
+# 2. 移动到同集成归档目录（按月；集成名从任务路径提取）
 YEAR_MONTH=$(date +%Y-%m)
-mkdir -p "docs/tasks/archive/$YEAR_MONTH"
-mv "$TASK_FILE" "docs/tasks/archive/$YEAR_MONTH/"
+INTG=$(echo "$TASK_FILE" | cut -d/ -f3)
+mkdir -p "docs/tasks/$INTG/archive/$YEAR_MONTH"
+mv "$TASK_FILE" "docs/tasks/$INTG/archive/$YEAR_MONTH/"
 
-echo "✅ 已归档到: docs/tasks/archive/$YEAR_MONTH/"
+echo "✅ 已归档到: docs/tasks/$INTG/archive/$YEAR_MONTH/"
 ```
 
 ## 使用示例
@@ -562,7 +567,7 @@ Claude:
 
 ## 错误处理
 
-**目录不存在** → 自动创建 `docs/tasks/{active,archive}` 全套
+**目录不存在** → 按 packages/ 集成清单自动创建 docs/tasks/<集成名>/{active,archive}`docs/tasks/{active,archive}` 全套
 
 **没有活跃任务** → 提示用户：创建新任务 | 恢复归档任务 | 查看历史
 

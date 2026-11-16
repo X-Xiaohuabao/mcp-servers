@@ -17,7 +17,7 @@ mcp-servers/
 │   ├── plugin/                 # 工具侧插件（采集数据）
 │   ├── server/                 # daemon + MCP server（stdio）
 │   └── docs/                   # 该集成的知识沉淀（api-notes 等）
-└── docs/tasks/active/              # 任务台账（沿 task-tracker 约定）
+└── docs/tasks/<集成名>/active/    # 任务台账（目录与 packages/ 集成包对齐）
 ```
 
 | 改什么 | 落在哪 |
@@ -38,7 +38,7 @@ mcp-servers/
 1. 接到任务先评估是否匹配技能（task-tracker / writing-plans 等），匹配则先激活。
 2. 改动前先读对应集成的 README 与 api-notes，不做猜测式修改。
 3. 完成后必须验证：脚本类跑通实际执行路径（非仅语法检查），MCP server 用真实客户端连接验证。
-4. 需要跨会话跟踪的任务放入 `docs/tasks/active/`，「集成」字段标注归属。
+4. 需要跨会话跟踪的任务放入 `docs/tasks/<集成名>/active/`——目录与 packages/ 集成包对齐，新建集成包时同步建任务目录，「集成」字段双保险标注。
 
 ## Git 规范
 
