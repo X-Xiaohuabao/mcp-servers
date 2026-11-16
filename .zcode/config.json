@@ -1,0 +1,69 @@
+{
+  "hooks": {
+    "enabled": true,
+    "events": {
+      "SessionStart": [
+        {
+          "matcher": "startup|resume",
+          "hooks": [
+            {
+              "type": "process",
+              "command": "node",
+              "args": [
+                "${CLAUDE_PROJECT_DIR}/.zcode/hooks/session-start.cjs"
+              ],
+              "timeoutMs": 5000,
+              "statusMessage": "注入项目状态"
+            }
+          ]
+        }
+      ],
+      "UserPromptSubmit": [
+        {
+          "hooks": [
+            {
+              "type": "process",
+              "command": "node",
+              "args": [
+                "${CLAUDE_PROJECT_DIR}/.zcode/hooks/skill-forced-eval.cjs"
+              ],
+              "timeoutMs": 10000,
+              "statusMessage": "评估匹配技能"
+            }
+          ]
+        }
+      ],
+      "PreToolUse": [
+        {
+          "matcher": "Bash|Write|PowerShell",
+          "hooks": [
+            {
+              "type": "process",
+              "command": "node",
+              "args": [
+                "${CLAUDE_PROJECT_DIR}/.zcode/hooks/pre-tool-use.cjs"
+              ],
+              "timeoutMs": 5000,
+              "statusMessage": "Shell 卫生与危险命令检查"
+            }
+          ]
+        }
+      ],
+      "Stop": [
+        {
+          "hooks": [
+            {
+              "type": "process",
+              "command": "node",
+              "args": [
+                "${CLAUDE_PROJECT_DIR}/.zcode/hooks/stop.cjs"
+              ],
+              "timeoutMs": 10000,
+              "statusMessage": "清理 nul 文件"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
