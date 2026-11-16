@@ -11,7 +11,7 @@
 | `plugin/code.js` | 旧手写骨架：遍历选中节点输出 JSON（**待迁移**：字段实测后迁入 src/，经 esbuild 打包替代） | 实现中 |
 | `plugin/src/main.ts` | 沙箱主线程入口：纯装配——读选中 → 调 lib/serialize → postMessage 交 ui.ts | 规划中 |
 | `plugin/src/ui.ts` | iframe 侧：WebSocket 连 daemon、断线重连、面板状态上报 | 规划中 |
-| `plugin/src/lib/serialize.ts` | 节点树 → token JSON 的纯函数序列化器（字段以控制台实测为准） | 规划中 |
+| `plugin/src/lib/serialize.ts` | 节点树 → 原语快照（RawNode 树）的纯函数序列化器（字段以控制台实测为准，不做 CSS 映射） | 规划中 |
 | `plugin/src/types.ts` | 消息结构镜像（手抄自 server/src/protocol，注释指向源） | 规划中 |
 | `plugin/ui.html` | 面板壳：显示导出/连接状态，引 ui 打包产物 | 规划中 |
 | `plugin/dist/` | esbuild 产物 code.js / ui.js（gitignore，不入表统计行数） | 规划中 |
@@ -25,8 +25,9 @@
 | `server/src/daemon/cache.ts` | 最新导出数据的内存缓存，供 MCP 工具读取 | 规划中 |
 | `server/src/mcp/index.ts` | MCP server 装配：stdio 传输 + 工具清单注册 | 规划中 |
 | `server/src/mcp/types.ts` | ToolResult（官方 `{ content, isError? }`）与工具 handler 签名等 mcp 层共享类型 | 规划中 |
-| `server/src/mcp/tools/export-selection.ts` | 工具 export_selection：返回选中节点树 JSON | 规划中 |
-| `server/src/mcp/tools/get-design-tokens.ts` | 工具 get_design_tokens：从缓存提取设计 token | 规划中 |
+| `server/src/mcp/css-map.ts` | 原语 → CSS 属性对象的纯函数映射（fills→background、effects→box-shadow 等；不可映射项给提示） | 规划中 |
+| `server/src/mcp/tools/get-structure.ts` | 工具 get_structure：从缓存返回轻量结构树（id/name/type/尺寸/层级） | 规划中 |
+| `server/src/mcp/tools/get-node-css.ts` | 工具 get_node_css(nodeId)：按 id 返回单节点 `css`（映射视图）+ `raw`（原语）双轨 JSON | 规划中 |
 | `server/src/protocol/messages.ts` | 消息 schema 单一事实源（两端共享契约） | 规划中 |
 | `server/package.json` / `tsconfig.json` | 依赖与编译配置 | 规划中 |
 
@@ -40,3 +41,4 @@
 ## 变更记录
 
 - 2026-11-16 建表：登记现状（code.js 手写骨架待迁移）与 TS + esbuild 目标结构
+- 2026-11-16 样式查询设计定稿：工具改为两段式 get_structure / get_node_css（替代 export-selection / get-design-tokens 草案），新增 mcp/css-map.ts 原语→CSS 纯函数映射；serialize.ts 职责明确为只产原语快照、不做 CSS 映射

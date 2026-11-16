@@ -40,6 +40,12 @@ MCP server（AI 客户端拉起，暴露 get_design_tokens / export_selection �
   - 熔断线：单文件 300 行 / 单函数 50 行，触发"停下提拆分方案"而非硬拆
   - 文件职责表制度：每集成维护 `docs/structure.md`，新建文件先入表再写码
 - **技术选型（2026-11-16 用户拍板）**：插件侧 TS + esbuild；server 侧 TypeScript；规范用 skills 定义（不走纯 markdown 文档）
+- **样式查询设计（2026-11-16 需求分析拍板）**：
+  - 表达形式：**原语 + CSS 视图双轨**——每节点 `css`（映射后 CSS 属性对象，AI 直接读用）+ `raw`（jsDesign 原语保真；vector/image fill 等 CSS 表达不了的回退兜底）
+  - 查询粒度：**两段式**——`get_structure` 返回轻量结构树（id/name/type/尺寸/层级），`get_node_css(nodeId)` 按 id 查单块完整样式；防大画板全量 JSON（十万字符级）撑爆 LLM 上下文
+  - 映射层位置：**server 侧**——插件只发原语快照（DesignSnapshot），MCP 工具层派生 CSS 视图；一次采集多视图按需生成，schema 演进不动插件（参考实现同路）
+  - schema 归属：由本仓设计，单一事实源定稿于 `server/src/protocol/messages.ts`，消费方 ui-restore 后续对齐
+  - CSS 映射规则（server 侧纯函数）：fills[SOLID]→background-color / fills[GRADIENT_*]→linear-gradient / strokes+strokeWeight→border / cornerRadius→border-radius / effects[DROP_SHADOW]→box-shadow / fontSize·fontName→font-* / lineHeight·letterSpacing→line-height·letter-spacing / layoutMode+itemSpacing+padding*→display:flex+gap+padding；不可映射项（vector path / image fill / constraints）在 css 视图给提示并依赖 raw 兜底
 
 ---
 
@@ -59,7 +65,7 @@ MCP server（AI 客户端拉起，暴露 get_design_tokens / export_selection �
   - **说明**: 选中节点 → 序列化 JSON（WebSocket 出口预留，落点大概率在 ui.ts/iframe 侧 ⚠️ TODO(实测)）；ui.html 面板显示导出状态
 - [ ] 3. 阶段 1.5：极简接收端（本地 WS 服务收 JSON 落盘验证）
 - [ ] 4. 对照现成方案数据质量（jsdesign-mcp-server 的 get_design_tokens 输出）
-- [ ] 5. 阶段 2：daemon + MCP server（@modelcontextprotocol/sdk），注册 export_selection / get_design_tokens
+- [ ] 5. 阶段 2：daemon + MCP server（@modelcontextprotocol/sdk），注册 get_structure / get_node_css
 - [ ] 6. ZCode 实测：选中画板 → AI 调工具拿 token → 对照 tokens.ts 出差异清单
 
 ---
@@ -141,3 +147,17 @@ MCP server（AI 客户端拉起，暴露 get_design_tokens / export_selection �
 - bridge-dev 的 ASCII 架构图迁为 mermaid（与新技能图规则统一）
 
 **影响范围**: .zcode/skills/arch-design/（新增）、bridge-dev SKILL.md 架构图；已 pnpm agent:sync（7 个文件）
+
+### 2026-11-16（第五次）
+**变更类型**: 方案调整（样式查询需求分析定稿）
+
+**变更内容**:
+- 用户提出需求「读取设计稿每个块的 CSS 样式 → 特殊 JSON 格式化 → MCP → AI」，经 arch-design 流程结构化分析后澄清三决策：
+  1. 表达形式 = 原语 + CSS 视图双轨（css 给 AI 直接读、raw 保真兜底）
+  2. 查询粒度 = 两段式（get_structure 轻量树 + get_node_css(nodeId) 单块查询）
+  3. JSON 格式由本仓设计，定稿于 protocol/messages.ts
+- 关键技术事实入档：即时设计节点模型无 CSS，只有设计原语；CSS 必为派生映射（映射规则表见方案设计节），且映射有损（vector/image fill/constraints 不可映射 → raw 兜底）
+- 映射层定 server 侧（插件只发原语快照），MCP 工具层派生视图
+- 步骤 5 工具注册名同步更新为 get_structure / get_node_css
+
+**影响范围**: 方案设计节、实现步骤 5、structure.md 工具文件清单（export-selection/get-design-tokens → get-structure/get-node-css + 新增 css-map）
