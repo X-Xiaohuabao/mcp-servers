@@ -30,25 +30,17 @@ description: |
 
 ## 目录结构
 
-双端 monorepo，任务按**端**分目录；跨端共享任务放 `shared/`：
+MCP 集成仓库，任务平铺管理（仓库无端维度，按集成区分靠文档「集成」字段）：
 
 ```
 {项目根目录}/
 └── docs/
     └── tasks/
-        ├── README.md          # 约定说明（选目录规则、端字段格式）
-        ├── rn/                # RN 端（apps/rn-app、apps/expo-spike）
-        │   ├── active/        # 进行中：task-20260121-153045-用户反馈.md
-        │   └── archive/       # 已完成：2026-01/task-xxx.md
-        ├── harmony/           # 鸿蒙端（apps/harmony-app）
-        │   ├── active/
-        │   └── archive/
-        └── shared/            # 跨端（packages/*、Bridge 协议、双端一致性）
-            ├── active/
-            └── archive/
+        ├── active/            # 进行中：task-20260121-153045-用户反馈.md
+        └── archive/           # 已完成：2026-01/task-xxx.md（按月归档）
 ```
 
-**选目录规则**：只动 RN 工程落 `rn/`；只动鸿蒙落 `harmony/`；动 `packages/*` 或双端都改落 `shared/`；不确定选 `shared/`。工程归属只写进文档端字段，不进目录（expo-spike 迁回 rn-app 时任务不挪窝）。完整约定见 `docs/tasks/README.md`。
+**归属区分**：仓库无端维度；任务属于哪个集成（如 jsdesign-bridge）写在文档「集成」字段，目录不按集成分（每集成任务量小，平铺足够）。
 
 ## 文档模板
 
@@ -56,7 +48,7 @@ description: |
 # 任务：{任务标题}
 
 **状态**: 🟢 进行中 | 🔵 已完成 | 🔴 已暂停
-**端**: rn（工程: expo-spike） | rn（工程: rn-app） | harmony | shared（rn + harmony）
+**集成**: jsdesign-bridge | {未来其它集成名}
 **创建时间**: {YYYY-MM-DD HH:MM:SS}
 **更新时间**: {YYYY-MM-DD HH:MM:SS}
 **Git 分支**: {branch_name}
@@ -192,7 +184,6 @@ description: |
 
 **已完成**: {X} / {总数} 步骤 ({百分比}%)
 
-> **shared/ 跨端任务**：本节按端分小节（`### rn（工程: xxx）` / `### harmony`），各端独立记录状态与下一步。
 
 **当前状态**:
 - **正在进行**: {当前正在做的具体事情}
@@ -255,12 +246,10 @@ description: |
 
 **步骤**：
 ```bash
-# 1. 确保目录存在（三端全套）
-mkdir -p docs/tasks/{rn,harmony,shared}/{active,archive}
+# 1. 确保目录存在
+mkdir -p docs/tasks/{active,archive}
 
-# 2. 按判定规则选目录
-#    只动 RN 工程 → rn/；只动鸿蒙 → harmony/；动 packages/* 或双端 → shared/
-TASK_DIR="docs/tasks/rn/active"   # 按实际判定替换
+TASK_DIR="docs/tasks/active"
 
 # 3. 生成文件名
 # 格式: task-{YYYYMMdd-HHMMSS}-{任务简称}.md
@@ -268,11 +257,11 @@ TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 SLUG="{任务标题简化版，截断30字符}"
 FILENAME="task-${TIMESTAMP}-${SLUG}.md"
 
-# 4. 创建文档（填充上述模板，端字段必须写）
+# 4. 创建文档（填充上述模板，「集成」字段必须写）
 # 填充模板内容到 $TASK_DIR/$FILENAME
 ```
 
-**README.md**：`docs/tasks/README.md` 为约定的事实源（选目录规则、端字段格式、归档规则），不要用内嵌副本覆盖它。
+**README.md**：本仓库未单独建 tasks README，约定以本 SKILL.md 与 AGENTS.md 为准。
 
 ### 2. 更新进度
 
@@ -281,7 +270,7 @@ FILENAME="task-${TIMESTAMP}-${SLUG}.md"
 **步骤**：
 ```bash
 # 1. 找到当前任务文档（最新的那个）
-TASK_FILE=$(ls -t docs/tasks/{rn,harmony,shared}/active/*.md 2>/dev/null | head -1)
+TASK_FILE=$(ls -t docs/tasks/active/*.md 2>/dev/null | head -1)
 
 # 2. 更新复选框: - [ ] → - [x]
 sed -i "s/^- \[ \] ${STEP_NUMBER}\./- [x] ${STEP_NUMBER}./" "$TASK_FILE"
@@ -305,19 +294,17 @@ PERCENT=$((DONE * 100 / TOTAL))
 
 **步骤**：
 ```bash
-# 按端遍历，输出带端标注
-for end in rn harmony shared; do
-  for file in docs/tasks/$end/active/*.md; do
-    [ -e "$file" ] || continue
-    TITLE=$(grep "^# 任务：" "$file" | sed 's/^# 任务：//')
-    STATUS=$(grep "^\*\*状态\*\*:" "$file" | sed 's/.*: //')
-    PROGRESS=$(grep "^\*\*已完成\*\*:" "$file" | sed 's/.*: //')
+# 遍历活跃任务
+for file in docs/tasks/active/*.md; do
+  [ -e "$file" ] || continue
+  TITLE=$(grep "^# 任务：" "$file" | sed 's/^# 任务：//')
+  STATUS=$(grep "^\*\*状态\*\*:" "$file" | sed 's/.*: //')
+  PROGRESS=$(grep "^\*\*已完成\*\*:" "$file" | sed 's/.*: //')
 
-    echo "📄 [$end] $TITLE"
-    echo "   状态: $STATUS | 进度: $PROGRESS"
-    echo "   文件: $file"
-    echo ""
-  done
+  echo "📄 $TITLE"
+  echo "   状态: $STATUS | 进度: $PROGRESS"
+  echo "   文件: $file"
+  echo ""
 done
 ```
 
@@ -327,11 +314,11 @@ done
 
 **步骤**：
 ```bash
-# 1. 确定要恢复的任务（可选端过滤：docs/tasks/{端}/active）
+# 1. 确定要恢复的任务
 if [ 用户指定了任务名 ]; then
-  TASK_FILE=$(find docs/tasks/{rn,harmony,shared}/active -name "*{用户指定的关键词}*.md" | head -1)
+  TASK_FILE=$(find docs/tasks/active -name "*{用户指定的关键词}*.md" | head -1)
 else
-  TASK_FILE=$(ls -t docs/tasks/{rn,harmony,shared}/active/*.md 2>/dev/null | head -1)  # 最新的
+  TASK_FILE=$(ls -t docs/tasks/active/*.md 2>/dev/null | head -1)  # 最新的
 fi
 
 # 2. 读取文档内容
@@ -354,7 +341,7 @@ echo "$NEXT_STEPS"
 **步骤**：
 ```bash
 # 1. 找到当前任务文档
-TASK_FILE=$(ls -t docs/tasks/{rn,harmony,shared}/active/*.md 2>/dev/null | head -1)
+TASK_FILE=$(ls -t docs/tasks/active/*.md 2>/dev/null | head -1)
 
 # 2. 在"方案设计"部分添加新方案
 # 如果是添加新方案，在"方案讨论"下增加方案 C、D 等
@@ -378,7 +365,7 @@ echo -e "### $CURRENT_TIME\n**变更类型**: 方案讨论\n\n**变更内容**:\
 **步骤**：
 ```bash
 # 1. 找到当前任务文档
-TASK_FILE=$(ls -t docs/tasks/{rn,harmony,shared}/active/*.md 2>/dev/null | head -1)
+TASK_FILE=$(ls -t docs/tasks/active/*.md 2>/dev/null | head -1)
 
 # 2. 在"技术调研"部分更新技术选型表格
 # 添加新的技术对比行
@@ -405,7 +392,7 @@ echo -e "### $CURRENT_TIME\n**变更类型**: 技术调研\n\n**变更内容**:\
 **步骤**：
 ```bash
 # 1. 找到当前任务文档
-TASK_FILE=$(ls -t docs/tasks/{rn,harmony,shared}/active/*.md 2>/dev/null | head -1)
+TASK_FILE=$(ls -t docs/tasks/active/*.md 2>/dev/null | head -1)
 
 # 2. 在"问题记录"部分添加新问题
 CURRENT_TIME=$(date '+%Y-%m-%d %H:%M')
@@ -438,13 +425,12 @@ echo -e "### $CURRENT_TIME\n**变更类型**: 问题记录\n\n**变更内容**:\
 # 1. 更新状态
 sed -i "s/^\*\*状态\*\*:.*/\*\*状态\*\*: 🔵 已完成/" "$TASK_FILE"
 
-# 2. 移动到同端归档目录（从路径推断端：rn / harmony / shared）
+# 2. 移动到归档目录（按月）
 YEAR_MONTH=$(date +%Y-%m)
-TASK_END=$(echo "$TASK_FILE" | grep -o 'tasks/\(rn\|harmony\|shared\)/' | cut -d/ -f2)
-mkdir -p "docs/tasks/$TASK_END/archive/$YEAR_MONTH"
-mv "$TASK_FILE" "docs/tasks/$TASK_END/archive/$YEAR_MONTH/"
+mkdir -p "docs/tasks/archive/$YEAR_MONTH"
+mv "$TASK_FILE" "docs/tasks/archive/$YEAR_MONTH/"
 
-echo "✅ 已归档到: docs/tasks/$TASK_END/archive/$YEAR_MONTH/"
+echo "✅ 已归档到: docs/tasks/archive/$YEAR_MONTH/"
 ```
 
 ## 使用示例
@@ -576,7 +562,7 @@ Claude:
 
 ## 错误处理
 
-**目录不存在** → 自动创建 `docs/tasks/{rn,harmony,shared}/{active,archive}` 全套
+**目录不存在** → 自动创建 `docs/tasks/{active,archive}` 全套
 
 **没有活跃任务** → 提示用户：创建新任务 | 恢复归档任务 | 查看历史
 

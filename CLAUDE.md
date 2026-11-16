@@ -17,14 +17,14 @@ mcp-servers/
 │   ├── plugin/                 # 工具侧插件（采集数据）
 │   ├── server/                 # daemon + MCP server（stdio）
 │   └── docs/                   # 该集成的知识沉淀（api-notes 等）
-└── docs/tasks/{rn,harmony,shared}/active/   # 任务台账（沿 task-tracker 约定）
+└── docs/tasks/active/              # 任务台账（沿 task-tracker 约定）
 ```
 
 | 改什么 | 落在哪 |
 |---|---|
 | 新增/修改某个集成的插件与服务 | `packages/<集成名>-bridge/` 内 |
 | 工具侧 API 调研结论 | 对应集成的 `docs/api-notes.md`（官方文档多为 SPA，机器抓不到，**人工阅读后沉淀于此**，不散落在对话里） |
-| 跨集成的任务 | `docs/tasks/`（多数任务属 `shared` 端） |
+| 跨集成的任务 | `docs/tasks/`（「集成」字段标注归属） |
 
 ## 开发规范
 
@@ -38,7 +38,7 @@ mcp-servers/
 1. 接到任务先评估是否匹配技能（task-tracker / writing-plans 等），匹配则先激活。
 2. 改动前先读对应集成的 README 与 api-notes，不做猜测式修改。
 3. 完成后必须验证：脚本类跑通实际执行路径（非仅语法检查），MCP server 用真实客户端连接验证。
-4. 需要跨会话跟踪的任务放入 `docs/tasks/<端>/active/`（本仓多为 shared）。
+4. 需要跨会话跟踪的任务放入 `docs/tasks/active/`，「集成」字段标注归属。
 
 ## Git 规范
 

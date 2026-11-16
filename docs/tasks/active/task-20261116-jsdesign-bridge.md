@@ -1,7 +1,7 @@
 # 任务：jsdesign-bridge 设计稿桥接（插件 → MCP）
 
 **状态**: 🟢 进行中
-**端**: shared（跨端工具链，服务 RN/鸿蒙 双端 UI 还原）
+**集成**: jsdesign-bridge
 **创建时间**: 2026-11-16
 **更新时间**: 2026-11-16
 **仓库**: github.com/X-Xiaohuabao/mcp-servers

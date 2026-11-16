@@ -41,29 +41,21 @@ if (branch) {
   );
 }
 
-// --- 活动任务（task-tracker 约定：docs/tasks/{rn,harmony,shared}/active/）---
-const ENDS = ['rn', 'harmony', 'shared'];
-const MAX_PER_END = 4;
-const endSections = [];
-for (const key of ENDS) {
-  try {
-    const tasks = fs
-      .readdirSync(path.join(projectRoot, 'docs', 'tasks', key, 'active'))
-      .filter(f => f.endsWith('.md'))
-      .slice(0, MAX_PER_END);
-    if (tasks.length > 0) {
-      endSections.push(`- ${key}: ${tasks.join('、')}`);
-    }
-  } catch {
-    // 端目录不存在则跳过
+// --- 活动任务（task-tracker 约定：docs/tasks/active/）---
+const MAX_TASKS = 6;
+try {
+  const tasks = fs
+    .readdirSync(path.join(projectRoot, 'docs', 'tasks', 'active'))
+    .filter(f => f.endsWith('.md'))
+    .slice(0, MAX_TASKS);
+  if (tasks.length > 0) {
+    const taskLines = tasks.map(f => `- ${f}`).join('\n');
+    const head = '## 活动任务（docs/tasks/active/）';
+    const tail = '\n继续未完成任务前，先读取对应任务文件恢复上下文。';
+    sections.push(head + '\n' + taskLines + tail);
   }
-}
-if (endSections.length > 0) {
-  sections.push(
-    `## 活动任务（按端，docs/tasks/<端>/active/）\n` +
-    endSections.join('\n') +
-    `\n继续未完成任务前，先读取对应任务文件恢复上下文。`
-  );
+} catch {
+  // 目录不存在则跳过
 }
 
 if (sections.length === 0) {
