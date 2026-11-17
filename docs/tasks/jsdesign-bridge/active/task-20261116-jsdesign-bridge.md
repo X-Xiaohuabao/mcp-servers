@@ -58,8 +58,8 @@ MCP server（AI 客户端拉起，暴露 get_design_tokens / export_selection �
 ## 🎯 实现步骤
 
 - [ ] 1. 阶段 1a：开发者控制台验证 API 字段
-  - **说明**: 客户端「插件 → 开发者 → 控制台」，`jsDesign.currentPage.selection` 遍历选中节点，确认 fills/fontSize/fontName/lineHeight/cornerRadius/effects 的真实数据结构
-  - **预期结果**: 字段清单回填到 plugin/code.js 的 TODO 注释处
+  - **说明**: 客户端「插件 → 开发者 → 控制台」，`jsDesign.currentPage.selection` 遍历选中节点，确认 fills/fontSize/fontName/lineHeight/cornerRadius/effects 的真实数据结构；**另探一项：`typeof node.getCSSAsync` 是否为 'function'**（开发模式 CSS 面板证实官方有映射引擎，若 API 可用则 css-map 可直接调官方引擎，探针见 api-notes.md「开发模式」节）
+  - **预期结果**: 字段清单回填到 plugin/code.js 的 TODO 注释处；getCSSAsync 可用性结论回填 api-notes.md
 - [ ] 2. 阶段 1b：插件本体（骨架已建：plugin/manifest.json + code.js，**按 bridge-dev 规范迁移 TS 结构**）
   - **文件**: `packages/jsdesign-bridge/plugin/src/`
   - **说明**: 选中节点 → 序列化 JSON（WebSocket 出口预留，落点大概率在 ui.ts/iframe 侧 ⚠️ TODO(实测)）；ui.html 面板显示导出状态
@@ -161,3 +161,14 @@ MCP server（AI 客户端拉起，暴露 get_design_tokens / export_selection �
 - 步骤 5 工具注册名同步更新为 get_structure / get_node_css
 
 **影响范围**: 方案设计节、实现步骤 5、structure.md 工具文件清单（export-selection/get-design-tokens → get-structure/get-node-css + 新增 css-map）
+
+### 2026-11-16（第六次）
+**变更类型**: 技术调研（用户观察带来的新线索）
+
+**变更内容**:
+- 用户实测观察：客户端「开发模式」点击组件，右侧按平台显示样式代码（web/h5 为 CSS）——证实官方已内置原语→CSS 映射引擎
+- 影响 1：css 视图方向获官方印证；官方面板输出可作为 css-map.ts 的对照基准（同节点 diff 即映射 bug）
+- 影响 2：新增待实测捷径——Figma 有 `node.getCSSAsync()`，即时设计兼容体系下是否可用未知；若可用 css-map 可改调官方引擎
+- 步骤 1a 实测清单追加 getCSSAsync 探针；api-notes.md 新增「开发模式（Dev Mode）」节
+
+**影响范围**: api-notes.md、实现步骤 1a；阶段 2 css-map.ts 实现方式二选一（官方引擎 / 自研映射表）待实测后定

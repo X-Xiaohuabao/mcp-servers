@@ -29,6 +29,19 @@ DocumentNode / PageNode / FrameNode / GroupNode / RectangleNode / EllipseNode / 
 | `Effect` | 阴影/模糊 | 双端映射表（rn↔harmony） |
 | `ExportSettings` | 切图导出 | 图标/图片资产 |
 
+## 开发模式（Dev Mode）的 CSS 面板（2026-11-16 用户实测观察）
+
+- 客户端「开发模式」下点击组件，右侧面板按目标平台显示样式代码，**web/h5 显示的是 CSS**
+- 结论 1：官方已内置「原语 → CSS」映射引擎，本仓 css 视图方向与官方一致
+- 结论 2：官方面板输出可作为自研 `css-map.ts` 的**对照基准**——同一节点两边各出一份 CSS，diff 即映射 bug
+- 潜在捷径 ⚠️ TODO(实测)：Figma 插件 API 有 `node.getCSSAsync()`（仅 Dev Mode 插件可用，返回 CSS 属性对象）；即时设计兼容 Figma 体系，**是否实现该 API 未知**。控制台探针：
+  ```js
+  const n = jsDesign.currentPage.selection[0];
+  typeof n.getCSSAsync  // 'function' 则存在捷径；'undefined' 则自研映射表
+  // 若存在：const css = await n.getCSSAsync(); console.log(css);
+  ```
+- 即使可用也要评估：官方映射面向人类开发者，字段取舍未必适合 LLM 消费（可能缺 token 语义化、多无关字段）
+
 ## 参考实现（nothing-sy/js.design，MIT）规模
 
 | 组件 | 文件 | 体量 |
@@ -52,3 +65,21 @@ DocumentNode / PageNode / FrameNode / GroupNode / RectangleNode / EllipseNode / 
 
 - 官方文档站为纯客户端渲染 SPA：WebFetch / web reader / 搜索引擎缓存均拿不到正文，只能浏览器阅读
 - npm 全局包的 CLI 命令名与包名不同：包 `jsdesign-mcp-server`，命令 `jsdesign-mcp`（直接运行会以 stdio 模式挂起等输入，不是 bug）
+
+## ⚠️ 实测铁律：manifest 的 id 必须纯数字（2026-11-17 血泪验证）
+
+**本地导入 manifest 时，id 为语义字符串会被客户端【静默拒绝】——无任何报错，导入无反应。**
+
+实测对照（同目录同 code.js/ui.html，仅 manifest 差异）：
+
+| id | 结果 |
+|---|---|
+| xiaohuabao-design-bridge（语义串） | ✗ 无反应 |
+| 2611161715jsd（数字+字母混合） | ✗ 无反应 |
+| 2611161715001（13位纯数字） | ✗ 无反应（当时同时改了 api/editorType，变量混杂） |
+| 100000000000000001（17位纯数字，用户实测） | ✓ 成功加载 |
+
+其它疑似雷点：name 含空格/大写未单独验证（避免混变量），建议纯小写。
+校准参考：市场成熟插件 id 均为平台生成的纯数字串（如 24jy7fqbftu17848840）。
+
+**教训：排除这类问题必须单变量对照测试，一次只改一个字段。**（本次多变量混合改了三轮，根因定位多花了 1 小时）

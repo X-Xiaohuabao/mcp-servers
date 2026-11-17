@@ -1,8 +1,7 @@
 {
-  "name": "JsDesign Token Bridge",
-  "id": "2611161715jsd",
-  "api": "2.0.0",
+  "name": "tttt",
+  "id": "100000000000000001",
+  "api": "1.0.0",
   "main": "code.js",
-  "ui": "ui.html",
-  "version": "0.1.0"
+  "ui": "ui.html"
 }
