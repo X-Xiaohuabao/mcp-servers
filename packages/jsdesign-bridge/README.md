@@ -12,12 +12,12 @@
 
 | 阶段 | 内容 | 状态 |
 |---|---|---|
-| 1a | 开发者控制台验证 API 字段（`jsDesign.currentPage.selection` 等） | 🔲 |
-| 1b | 插件本体：选中节点 → 序列化 JSON（WebSocket 出口预留） | 🔲 骨架已建 |
-| 1.5 | 极简接收端：WS 收到的 JSON 落盘验证 | 🔲 |
-| 2 | daemon + MCP server（stdio），插件零改动 | 🔲 |
+| 1a | 控制台/探针面板验证 API 字段（8 探针三批，实测铁律×2 沉淀 api-notes） | ✅ 2026-11-17 |
+| 1b | 插件本体：plugin/src/ TS 五文件 + esbuild（es2017 + ui 内联注入），拉模式被动响应 frames.list / frame.snapshot | ✅ 2026-11-17 |
+| 1.5 | 极简接收端：dev-receiver.mjs（3848）真机采集，快照落盘 dev-out/ 验收通过 | ✅ 2026-11-17 |
+| 2 | daemon + MCP server（stdio），三段式工具 list_frames / get_structure / get_node_css，css-map 自研映射 | 🔲 下一步 |
 
-先跑通**现成方案**对照数据质量：npm 全局装 `jsdesign-mcp-server@2.0.0` + 插件市场装 `JsDesign MCP Bridge`（开发者 nothing），见主仓库外 [mcp-setup 文档](../../../README.md)。
+端口定案：自研桥 **3848**（参考实现/市场插件占 3847，可共存）。先跑通**现成方案**对照数据质量：npm 全局装 `jsdesign-mcp-server@2.0.0` + 插件市场装 `JsDesign MCP Bridge`（开发者 nothing），见主仓库外 [mcp-setup 文档](../../../README.md)。
 
 ## 插件加载（开发者模式）
 

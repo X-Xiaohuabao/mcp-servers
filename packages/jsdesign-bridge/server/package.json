@@ -1,0 +1,14 @@
+{
+  "name": "@jsdesign-bridge/server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "jsdesign-bridge daemon + MCP server（阶段 2 实现，当前仅承载 protocol schema）",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0"
+  }
+}

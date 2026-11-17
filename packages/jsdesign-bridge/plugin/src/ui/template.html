@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { font-family: system-ui, sans-serif; padding: 12px; font-size: 12px; color: #2B3440; margin: 0; }
+  .line { margin-bottom: 8px; line-height: 1.5; }
+  .ok { color: #1a7f37; }
+  .wait { color: #9a6700; }
+  .off { color: #8a94a6; }
+  .info { color: #2B3440; }
+  .err { color: #c62828; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+  <div id="conn" class="line off">○ 连接中…</div>
+  <div id="last" class="line off">尚无采集记录（AI 请求驱动，无需手动操作）</div>
+  <div id="err" class="line err"></div>
+  <!--UI_BUNDLE_INJECT-->
+</body>
+</html>

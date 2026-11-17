@@ -1,1 +1,128 @@
-<div style="padding: 20px;">插件加载成功</div>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { font-family: system-ui, sans-serif; padding: 12px; font-size: 12px; color: #2B3440; margin: 0; }
+  .line { margin-bottom: 8px; line-height: 1.5; }
+  .ok { color: #1a7f37; }
+  .wait { color: #9a6700; }
+  .off { color: #8a94a6; }
+  .info { color: #2B3440; }
+  .err { color: #c62828; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+  <div id="conn" class="line off">○ 连接中…</div>
+  <div id="last" class="line off">尚无采集记录（AI 请求驱动，无需手动操作）</div>
+  <div id="err" class="line err"></div>
+  <script>
+"use strict";
+(() => {
+  // src/types.ts
+  var WS_URL = "ws://127.0.0.1:3848";
+  var DAEMON_IDLE_EXIT_MS = 15 * 60 * 1e3;
+
+  // src/ui/ui.ts
+  var RETRY_BASE_MS = 1e3;
+  var RETRY_MAX_MS = 15e3;
+  var connEl = document.getElementById("conn");
+  var lastEl = document.getElementById("last");
+  var errEl = document.getElementById("err");
+  function setLine(el, text, cls) {
+    if (!el) return;
+    el.textContent = text;
+    el.className = "line " + cls;
+  }
+  function setConn(state, detail) {
+    const label = state === "connected" ? "\u25CF \u5DF2\u8FDE\u63A5 daemon" : state === "connecting" ? "\u25CB \u8FDE\u63A5\u4E2D\u2026" : "\u25CB \u672A\u8FDE\u63A5";
+    const cls = state === "connected" ? "ok" : state === "connecting" ? "wait" : "off";
+    setLine(connEl, `${label}\uFF08${WS_URL}\uFF09${detail}`, cls);
+  }
+  function setErr(text) {
+    setLine(errEl, text, "err");
+  }
+  function sendToMain(request) {
+    parent.postMessage({ pluginMessage: request }, "*");
+  }
+  var ws = null;
+  function sendToDaemon(result) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(result));
+      return;
+    }
+    setErr("\u7ED3\u679C\u88AB\u4E22\u5F03\uFF1AWS \u5DF2\u65AD\u5F00\uFF08daemon \u91CD\u8FDE\u540E\u4F1A\u91CD\u65B0\u8BF7\u6C42\uFF09");
+  }
+  window.onmessage = (event) => {
+    const envelope = event.data;
+    const msg = envelope == null ? void 0 : envelope.pluginMessage;
+    if (typeof msg !== "object" || msg === null) return;
+    const m = msg;
+    switch (m.type) {
+      case "frames.list.result":
+        if (m.ok) {
+          setLine(lastEl, `\u2713 \u753B\u677F\u6E05\u5355 ${m.frames.length} \u4E2A \xB7 ${(/* @__PURE__ */ new Date()).toLocaleTimeString()}`, "info");
+          setErr("");
+        } else {
+          setErr("\u6E05\u5355\u5931\u8D25\uFF1A" + m.error);
+        }
+        sendToDaemon(m);
+        break;
+      case "frame.snapshot.result":
+        if (m.ok) {
+          const s = m.snapshot;
+          setLine(lastEl, `\u2713 \u753B\u677F\u300C${s.name}\u300D ${s.nodeCount} \u8282\u70B9${s.truncated ? "\uFF08\u5DF2\u622A\u65AD\uFF09" : ""} \xB7 ${(/* @__PURE__ */ new Date()).toLocaleTimeString()}`, "info");
+          setErr("");
+        } else {
+          setErr("\u5FEB\u7167\u5931\u8D25\uFF1A" + m.error);
+        }
+        sendToDaemon(m);
+        break;
+    }
+  };
+  var retryCount = 0;
+  function scheduleReconnect() {
+    const delay = Math.min(RETRY_BASE_MS * 2 ** retryCount, RETRY_MAX_MS);
+    retryCount += 1;
+    setConn("disconnected", `\u7B2C ${retryCount} \u6B21\u91CD\u8FDE\uFF08${Math.round(delay / 1e3)}s \u540E\uFF09`);
+    setTimeout(connect, delay);
+  }
+  function connect() {
+    setConn("connecting", "");
+    try {
+      ws = new WebSocket(WS_URL);
+    } catch (e) {
+      setErr("WebSocket \u6784\u9020\u5931\u8D25\uFF1A" + (e instanceof Error ? e.message : String(e)));
+      scheduleReconnect();
+      return;
+    }
+    ws.onopen = () => {
+      retryCount = 0;
+      setConn("connected", "");
+      setErr("");
+    };
+    ws.onerror = () => {
+    };
+    ws.onclose = () => {
+      ws = null;
+      scheduleReconnect();
+    };
+    ws.onmessage = (ev) => {
+      let request = null;
+      try {
+        request = JSON.parse(String(ev.data));
+      } catch (e) {
+        return;
+      }
+      if (typeof request !== "object" || request === null) return;
+      if (typeof request.requestId !== "string") return;
+      if (request.type === "frames.list" || request.type === "frame.snapshot") sendToMain(request);
+    };
+  }
+  setConn("connecting", "");
+  connect();
+})();
+
+</script>
+</body>
+</html>

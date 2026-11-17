@@ -1,0 +1,21 @@
+{
+  "name": "@jsdesign-bridge/plugin",
+  "version": "0.1.0",
+  "private": true,
+  "description": "huabao-design-bridge 即时设计插件（源码构建产物 dist/ 由 manifest 引用）",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:test": "node scripts/build-test.mjs",
+    "test": "npm run build:test && node --test \"dist-test/*.test.js\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.5.0"
+  },
+  "dependencies": {
+    "ws": "^8.23.0"
+  }
+}
