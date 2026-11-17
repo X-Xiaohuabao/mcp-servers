@@ -10,17 +10,23 @@
   .off { color: #8a94a6; }
   .info { color: #2B3440; }
   .err { color: #c62828; white-space: pre-wrap; }
+  #probe-btn { margin: 4px 0 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
+  #probe-out { margin: 0 0 8px; padding: 6px; background: #f6f8fa; border-radius: 4px;
+    font: 11px/1.4 Consolas, monospace; white-space: pre-wrap; word-break: break-all;
+    max-height: 160px; overflow-y: auto; color: #2B3440; }
 </style>
 </head>
 <body>
   <div id="conn" class="line off">○ 连接中…</div>
   <div id="last" class="line off">尚无采集记录（AI 请求驱动，无需手动操作）</div>
   <div id="err" class="line err"></div>
+  <button id="probe-btn">🔬 探针⑨：测选中节点 exportAsync</button>
+  <pre id="probe-out">未运行（选中节点后点击上方按钮）</pre>
   <script>
 "use strict";
 (() => {
   // src/types.ts
-  var WS_URL = "ws://127.0.0.1:3848";
+  var WS_URL = "ws://127.0.0.1:1120";
   var DAEMON_IDLE_EXIT_MS = 15 * 60 * 1e3;
 
   // src/ui/ui.ts
@@ -29,6 +35,8 @@
   var connEl = document.getElementById("conn");
   var lastEl = document.getElementById("last");
   var errEl = document.getElementById("err");
+  var probeBtn = document.getElementById("probe-btn");
+  var probeOut = document.getElementById("probe-out");
   function setLine(el, text, cls) {
     if (!el) return;
     el.textContent = text;
@@ -45,6 +53,28 @@
   function sendToMain(request) {
     parent.postMessage({ pluginMessage: request }, "*");
   }
+  if (probeBtn) {
+    probeBtn.onclick = () => {
+      if (probeOut) probeOut.textContent = "\u63A2\u9488\u6267\u884C\u4E2D\u2026\uFF08\u9009\u4E2D\u8282\u70B9\u8DD1 exportAsync\uFF09";
+      sendToMain({ type: "probe.export", requestId: "probe-" + Date.now() });
+    };
+  }
+  function renderProbe(r) {
+    var _a, _b, _c;
+    if (!probeOut) return;
+    if (!r.ok) {
+      probeOut.textContent = `\u2717 ${(_a = r.error) != null ? _a : "\u63A2\u9488\u5931\u8D25"}`;
+      return;
+    }
+    const lines = [
+      `\u8282\u70B9\u300C${(_b = r.nodeName) != null ? _b : "?"}\u300D(${(_c = r.nodeType) != null ? _c : "?"}) \xB7 exportAsync = ${r.exportAsyncType}`
+    ];
+    if (r.svgBytes !== void 0) lines.push(`\u2713 SVG ${r.svgBytes}B\uFF08\u524D\u6BB5\u7ED3\u6784\u2193\uFF09`);
+    if (r.pngBytes !== void 0) lines.push(`\u2713 PNG \xD72 \u7F29\u653E ${r.pngBytes}B`);
+    if (r.error) lines.push(`\u26A0 ${r.error}`);
+    if (r.svgPreview) lines.push(r.svgPreview);
+    probeOut.textContent = lines.join("\n");
+  }
   var ws = null;
   function sendToDaemon(result) {
     if (ws && ws.readyState === WebSocket.OPEN) {
@@ -59,9 +89,13 @@
     if (typeof msg !== "object" || msg === null) return;
     const m = msg;
     switch (m.type) {
+      case "probe.export.result":
+        renderProbe(m);
+        break;
       case "frames.list.result":
         if (m.ok) {
-          setLine(lastEl, `\u2713 \u753B\u677F\u6E05\u5355 ${m.frames.length} \u4E2A \xB7 ${(/* @__PURE__ */ new Date()).toLocaleTimeString()}`, "info");
+          const file = m.fileName ? ` \xB7 \u6587\u4EF6\u300C${m.fileName}\u300D` : "";
+          setLine(lastEl, `\u2713 \u753B\u677F\u6E05\u5355 ${m.frames.length} \u4E2A${file} \xB7 ${(/* @__PURE__ */ new Date()).toLocaleTimeString()}`, "info");
           setErr("");
         } else {
           setErr("\u6E05\u5355\u5931\u8D25\uFF1A" + m.error);
@@ -75,6 +109,15 @@
           setErr("");
         } else {
           setErr("\u5FEB\u7167\u5931\u8D25\uFF1A" + m.error);
+        }
+        sendToDaemon(m);
+        break;
+      case "asset.export.result":
+        if (m.ok) {
+          setLine(lastEl, `\u2713 \u5207\u56FE\u300C${m.nodeName}\u300D${m.ext.toUpperCase()} \u5DF2\u56DE\u4F20 daemon \xB7 ${(/* @__PURE__ */ new Date()).toLocaleTimeString()}`, "info");
+          setErr("");
+        } else {
+          setErr("\u5207\u56FE\u5931\u8D25\uFF1A" + m.error);
         }
         sendToDaemon(m);
         break;
@@ -116,7 +159,7 @@
       }
       if (typeof request !== "object" || request === null) return;
       if (typeof request.requestId !== "string") return;
-      if (request.type === "frames.list" || request.type === "frame.snapshot") sendToMain(request);
+      if (request.type === "frames.list" || request.type === "frame.snapshot" || request.type === "asset.export") sendToMain(request);
     };
   }
   setConn("connecting", "");

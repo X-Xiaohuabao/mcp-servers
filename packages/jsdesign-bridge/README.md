@@ -17,7 +17,7 @@
 | 1.5 | 极简接收端：dev-receiver.mjs（3848）真机采集，快照落盘 dev-out/ 验收通过 | ✅ 2026-11-17 |
 | 2 | daemon + MCP server（stdio），三段式工具 list_frames / get_structure / get_node_css，css-map 自研映射 | 🔲 下一步 |
 
-端口定案：自研桥 **3848**（参考实现/市场插件占 3847，可共存）。先跑通**现成方案**对照数据质量：npm 全局装 `jsdesign-mcp-server@2.0.0` + 插件市场装 `JsDesign MCP Bridge`（开发者 nothing），见主仓库外 [mcp-setup 文档](../../../README.md)。
+端口定案：自研桥 **1120**（用户指定；参考实现/市场插件占 3847，可共存）。先跑通**现成方案**对照数据质量：npm 全局装 `jsdesign-mcp-server@2.0.0` + 插件市场装 `JsDesign MCP Bridge`（开发者 nothing），见主仓库外 [mcp-setup 文档](../../../README.md)。
 
 ## 插件加载（开发者模式）
 

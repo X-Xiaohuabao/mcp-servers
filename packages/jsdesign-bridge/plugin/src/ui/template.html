@@ -10,12 +10,18 @@
   .off { color: #8a94a6; }
   .info { color: #2B3440; }
   .err { color: #c62828; white-space: pre-wrap; }
+  #probe-btn { margin: 4px 0 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
+  #probe-out { margin: 0 0 8px; padding: 6px; background: #f6f8fa; border-radius: 4px;
+    font: 11px/1.4 Consolas, monospace; white-space: pre-wrap; word-break: break-all;
+    max-height: 160px; overflow-y: auto; color: #2B3440; }
 </style>
 </head>
 <body>
   <div id="conn" class="line off">○ 连接中…</div>
   <div id="last" class="line off">尚无采集记录（AI 请求驱动，无需手动操作）</div>
   <div id="err" class="line err"></div>
+  <button id="probe-btn">🔬 探针⑨：测选中节点 exportAsync</button>
+  <pre id="probe-out">未运行（选中节点后点击上方按钮）</pre>
   <!--UI_BUNDLE_INJECT-->
 </body>
 </html>

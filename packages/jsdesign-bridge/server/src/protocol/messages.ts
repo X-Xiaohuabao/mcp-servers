@@ -9,8 +9,8 @@
 
 // ---------- 协议常量 ----------
 
-/** daemon WS 监听地址（插件 ui 侧连接目标）。3848：避开参考实现/市场 MCP Bridge 的 3847，可共存 */
-export const WS_URL = 'ws://127.0.0.1:3848';
+/** daemon WS 监听地址（插件 ui 侧连接目标）。1120：用户指定，避开参考实现/市场 MCP Bridge 的 3847，可共存 */
+export const WS_URL = 'ws://127.0.0.1:1120';
 
 /** 全部连接断开后 daemon 空闲自退时长（参考实现实践） */
 export const DAEMON_IDLE_EXIT_MS = 15 * 60 * 1000;
@@ -148,14 +148,63 @@ export interface RequestBase {
   requestId: string;
 }
 
+/** daemon.request 的入参意图（requestId 由 daemon 统一生成附加） */
+export type DaemonRequestIntent =
+  | { type: 'frames.list' }
+  | { type: 'frame.snapshot'; frameId: string }
+  | { type: 'asset.export'; nodeId: string; format: AssetFormat; scale: number };
+
 export type DaemonToPlugin =
   | ({ type: 'frames.list' } & RequestBase)
-  | ({ type: 'frame.snapshot'; frameId: string } & RequestBase);
+  | ({ type: 'frame.snapshot'; frameId: string } & RequestBase)
+  | ({ type: 'asset.export'; nodeId: string; format: AssetFormat; scale: number } & RequestBase);
 
 // ---------- 消息：插件 → daemon（采集结果） ----------
 
+/**
+ * 切图导出格式（export_asset 工具；探针⑨实证 exportAsync，探针⑩原图字节 getImageByHash TODO 实测）：
+ * - auto：插件按节点决策——fills 含可见 IMAGE → original；否则 svg（矢量图标首选，fill 可被 CSS 覆盖）
+ * - original：IMAGE 填充的原图字节（imageHash → getImageByHash → getBytesAsync），实测前 fallback 提示用 png
+ * - svg / png / jpg：exportAsync 直出；scale 仅对 png/jpg 生效（1-4，默认 2）
+ */
+export type AssetFormat = 'auto' | 'svg' | 'png' | 'jpg' | 'original';
+
 export type PluginToDaemon =
-  | { type: 'frames.list.result'; requestId: string; ok: true; frames: FrameInfo[] }
+  | { type: 'frames.list.result'; requestId: string; ok: true; frames: FrameInfo[]; fileName?: string }
   | { type: 'frames.list.result'; requestId: string; ok: false; error: string }
   | { type: 'frame.snapshot.result'; requestId: string; ok: true; snapshot: FrameSnapshot }
-  | { type: 'frame.snapshot.result'; requestId: string; ok: false; error: string };
+  | { type: 'frame.snapshot.result'; requestId: string; ok: false; error: string }
+  | {
+      type: 'asset.export.result';
+      requestId: string;
+      ok: true;
+      /** 字节经 base64 编码过 WS（JSON 帧仅文本；工具侧解码落盘，不进 AI 上下文） */
+      base64: string;
+      ext: 'svg' | 'png' | 'jpg' | 'bin';
+      nodeName: string;
+      nodeType: string;
+      format: Exclude<AssetFormat, 'auto'> | 'bin';
+    }
+  | { type: 'asset.export.result'; requestId: string; ok: false; error: string };
+
+// ---------- 消息：MCP server → daemon（客户端通道，阶段 3 daemon 独立化） ----------
+//
+// 架构（2026-11-17 用户拍板）：daemon 独立单例进程（唯一监听 1120，持缓存 + 插件连接）；
+// 每个会话的 MCP server 作为 WS 客户端接入（?role=client），不再监听端口——多会话天然并存。
+// 插件连接无 role 参数（默认 plugin，协议零改动、插件零重建）。
+// daemon 对 client 的工具请求重写 requestId（`req:<connId>:<seq>`）转发给插件，
+// 结果按前缀路由回发起方并还原原 requestId——多客户端并发安全。
+
+/** 客户端工具请求意图（与 DaemonRequestIntent 同形，独立命名以示通道） */
+export type ClientToDaemon =
+  | { type: 'client.hello' }
+  | { type: 'cache.getFrameInfos'; requestId: string }
+  | { type: 'cache.getSnapshot'; requestId: string; frameId: string }
+  | { type: 'cache.findNode'; requestId: string; nodeId: string }
+  | { type: 'tool.request'; requestId: string; intent: DaemonRequestIntent };
+
+export type DaemonToClient =
+  | { type: 'cache.frameInfos'; requestId: string; frames: FrameInfo[] | null; fileName: string | null }
+  | { type: 'cache.snapshot'; requestId: string; snapshot: FrameSnapshot | null }
+  | { type: 'cache.node'; requestId: string; hit: { node: RawNode; snapshot: FrameSnapshot } | null }
+  | { type: 'tool.result'; requestId: string; payload: PluginToDaemon };

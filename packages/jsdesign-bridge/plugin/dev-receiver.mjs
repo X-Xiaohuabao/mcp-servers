@@ -1,10 +1,10 @@
 // 阶段 1.5 极简接收端（dev 工具，非正式 daemon——阶段 2 被 server/src/daemon 替代）
-// 用途：本地起 WS 服务（ws://127.0.0.1:3848）→ 等插件连接 → 发 frames.list + 逐画板 frame.snapshot → 响应落盘 dev-out/
+// 用途：本地起 WS 服务（ws://127.0.0.1:1120）→ 等插件连接 → 发 frames.list + 逐画板 frame.snapshot → 响应落盘 dev-out/
 // 用法：PATH 前缀 node22 后 `node dev-receiver.mjs`
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { WebSocketServer } from 'ws';
 
-const PORT = 3848; // 3848：避开参考实现/市场 MCP Bridge 的 3847，可共存（协议定稿见 server/src/protocol/messages.ts）
+const PORT = 1120; // 1120：用户指定，避开参考实现/市场 MCP Bridge 的 3847，可共存（协议定稿见 server/src/protocol/messages.ts）
 const OUT_DIR = 'dev-out';
 mkdirSync(OUT_DIR, { recursive: true });
 

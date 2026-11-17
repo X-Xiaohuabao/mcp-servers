@@ -8,6 +8,8 @@ declare const jsDesign: {
   showUI(uiFile: unknown, options?: { width?: number; height?: number }): void;
   /** 文档根节点（实测探针⑥：root.children 为页面列表，jsDesign.pages 不存在） */
   root: { children?: unknown };
+  /** 当前页面（实测探针②：currentPage.selection[0] 取到选中节点，getCSSAsync 探针经此路径执行成功） */
+  currentPage: { selection?: unknown };
   /** 实测探针⑤：按 id 直查节点，Promise<node|null> */
   getNodeByIdAsync(id: string): Promise<unknown>;
   ui: {

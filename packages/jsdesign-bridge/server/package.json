@@ -2,13 +2,23 @@
   "name": "@jsdesign-bridge/server",
   "version": "0.1.0",
   "private": true,
-  "description": "jsdesign-bridge daemon + MCP server（阶段 2 实现，当前仅承载 protocol schema）",
+  "description": "jsdesign-bridge daemon + MCP server（stdio；构建产物 dist/index.js 供 AI 客户端拉起）",
   "type": "module",
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:test": "node scripts/build-test.mjs",
+    "test": "npm run build:test && node --test \"dist-test/*.test.js\"",
+    "build": "node scripts/build.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "@types/ws": "^8.18.2",
+    "esbuild": "^0.25.0",
     "typescript": "^5.5.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "ws": "^8.23.0",
+    "zod": "^3.25.76"
   }
 }
