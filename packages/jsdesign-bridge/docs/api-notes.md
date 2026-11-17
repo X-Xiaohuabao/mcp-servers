@@ -41,6 +41,31 @@ DocumentNode / PageNode / FrameNode / GroupNode / RectangleNode / EllipseNode / 
   - `font-weight: 700`：官方同样从字体 style 推导数值（印证 fontWeight 字段不暴露的实测）
   - `line-height: 26.06px`：`lineHeight:{unit:'AUTO'}` 被官方换算为具体 px——css-map 处理 AUTO 时用 font-size×比例反推公式或保真 raw，探针⑦拿到 AUTO 样本后与官方面板同节点对照定标
   - 另输出 `letter-spacing`/`vertical-align`/`text-align`/`opacity`；面板带 CSS/iOS/Android 三平台切换与切图（规范预设）区
+- **官方插件 API 全表面审查（2026-11-17，官方类型包 @jsdesigndeveloper/plugin-typings@1.0.12，npm 机器可读 .d.ts）**：
+  - **CSS 生成接口彻底不存在**：全 1194 行类型定义无 getCSSAsync/任何 CSS 输出方法（"style" 命中全为样式库 PaintStyle/TextStyle/EffectStyle/GridStyle 共享样式体系，与 CSS 无关）——类型层 + 探针②运行时层双证，自研 css-map 定案维持
+  - **发现可用官方接口 `exportAsync`**（ExportMixin，全部场景节点可用）：`exportAsync(settings?: ExportSettings): Promise<Uint8Array>`，支持 **PNG / JPG / SVG / PDF** 四格式；SVG 专属选项 `svgOutlineText`（默认 true=文本转轮廓路径）、`svgIdAttribute`（默认 false，true 时输出节点 id 属性→可做节点级 SVG 关联）、`svgSimplifyStroke`
+  - exportAsync 对本桥的三种候选价值（增强而非替换自研映射）：①**可编程对照基准**——官方渲染引擎算出的 SVG 属性（渐变 stops/阴影 filter/描边形态）可与 css-map 输出自动 diff，取代"人眼抄面板"，闭环 AI 全链路（契合 fan-out 偏好）；②**硬分支取数**——渐变/复杂效果/混排是手工映射最易错分支，可改解析官方 SVG 属性兜底；③**PNG 切图**（图片填充/图标资产，还原管线刚需）
+  - ~~⚠️ TODO(实测) 探针⑨~~ → **2026-11-17 面板化实测通过**（真稿 VECTOR 节点：`exportAsync=function`，SVG/PNG 均成功；结论与换算公式见「实测结果回填区」探针⑨行 + 「SVG 对照换算公式」节。遗留：`svgOutlineText:false` 时 `<text>` 形态未独立验证——本跑未含 TEXT 节点；大节点耗时未测）。脚本：
+    ```js
+    (function () {
+      const n = jsDesign.currentPage.selection[0];
+      if (!n) return console.warn('请先选中节点');
+      console.log('typeof n.exportAsync =', typeof n.exportAsync);
+      if (typeof n.exportAsync !== 'function') return;
+      (async () => {
+        try {
+          const svg = await n.exportAsync({ format: 'SVG', svgIdAttribute: true, svgOutlineText: false });
+          const text = new TextDecoder().decode(svg);
+          console.log('✓ SVG:', text.slice(0, 1200));
+        } catch (e) { console.warn('SVG 失败:', e.message); }
+        try {
+          const png = await n.exportAsync({ format: 'PNG', constraint: { type: 'SCALE', value: 2 } });
+          console.log('✓ PNG bytes:', png.length);
+        } catch (e) { console.warn('PNG 失败:', e.message); }
+      })();
+    })();
+    ```
+    判读：`'function'` 且 SVG 含 fill/stroke/filter 属性 → 对照基准升级为可编程；`<text>` 保留字体属性 → 文本类映射可直接取官方值；报错 → 维持纯文档模型自研路线
 
 ## 参考实现（nothing-sy/js.design，MIT）规模
 
@@ -226,13 +251,43 @@ DocumentNode / PageNode / FrameNode / GroupNode / RectangleNode / EllipseNode / 
 | 5 getNodeByIdAsync | `function`，按 id 找回 FRAME 成功 | **get_node_css 可按 nodeId 直查节点**，不强依赖快照树 | 2026-11-17 |
 | 6 全文档画板清单 | `jsDesign.pages = undefined`；**`jsDesign.root.children` ✓**（实测 1 页"页面 1"→ 2 画板带 id/尺寸） | **list_frames 实现路径定案**：`jsDesign.root.children` → `page.children` 过滤 `type==='FRAME'` | 2026-11-17 |
 | 7 样本画板全检（渐变/阴影/图片/描边/自动布局/混排文本/实例） | 三跑覆盖 FRAME/TEXT/RECTANGLE；**描边最简形态实测**：`strokes[solid black] + strokeWeight:1 + dashPattern:[]`（border 映射输入确认） | **1a 关闭，不阻塞 1b**：渐变/阴影/图片/自动布局/混排/实例等映射分支按 bridge-dev 规范以 unknown+守卫+TODO(实测) 编码，步骤 6 真实设计稿实测一并验证（探针面板保留随时抽查） | 2026-11-17 |
-| 8 iframe 网络自检（面板加载自动） | `WebSocket/fetch/XMLHttpRequest` 全为 function；**对 3847 连接 onopen 成功** | **架构基石通过**：iframe 可建 WS，传输方案实锤。⚠ 3847 是参考实现 daemon（jsdesign-mcp-server/市场插件）端口：真机首跑插件面板"已连接"实为误连参考 daemon（netstat LISTENING + 参考 MCP get_connection_status clientCount=1 双证）→ **已定案：自研桥改用 3848 与参考实现永久共存**，无需关市场插件 | 2026-11-17 |
+| 8 iframe 网络自检（面板加载自动） | `WebSocket/fetch/XMLHttpRequest` 全为 function；**对 3847 连接 onopen 成功** | **架构基石通过**：iframe 可建 WS，传输方案实锤。⚠ 3847 是参考实现 daemon（jsdesign-mcp-server/市场插件）端口：真机首跑插件面板"已连接"实为误连参考 daemon（netstat LISTENING + 参考 MCP get_connection_status clientCount=1 双证）→ **已定案：自研桥改用独立端口 1120（用户指定，最终定案）与参考实现永久共存**，无需关市场插件 | 2026-11-17 |
+| 9 exportAsync 可用性与产物形态 | **`function`（VECTOR 真稿节点实测通过）**：SVG 1545B + PNG×2 33919B 均成功；首跑报 `Expected node, got undefined` = 方法摘下裸调用丢 this，`.call(node,…)` 修复 | **官方导出接口可用（探针⑨面板化按钮触发）**：①SVG 是官方引擎算好的最终视觉属性，可与 css-map **程序化 diff**（对照基准升级，取代人眼抄面板）；②filter id 嵌节点 id（`filter_35_279` ← 35:279）→ 节点级 SVG 关联可行；③PNG 切图可用；SVG↔CSS 换算公式见下方「SVG 对照换算公式」节 | 2026-11-17 |
+
+### SVG 对照换算公式（探针⑨真稿 VECTOR 实证，2026-11-17）
+
+同一卡片的官方面板 CSS 与官方 SVG 输出逐项对得上，换算关系：
+
+| CSS 属性 | SVG 形态 | 换算 |
+|---|---|---|
+| `background: rgba(247,250,253,1)` | `fill="#F7FAFD"` | 不透明 SOLID 官方用 hex，等价直读 |
+| `border: 1px solid rgba(209,225,251,1)` | 描边转**两条路径**（外圈+内圈，`fill-rule="evenodd"` 环形填充），描边色出现在 `fill` | 描边→路径环技术：SVG 里 stroke 色在 fill 属性，勿误读为填充色 |
+| `box-shadow: 0px 0px 15px rgba(222,233,255,1)` | `<filter>` 内 `feGaussianBlur stdDeviation="7.5"` + `feColorMatrix` 末行 `0.8706,0.9137,1` | **模糊半径 = stdDeviation × 2**；**RGB = feColorMatrix 系数 × 255**（0.8706×255=222, 0.9137×255=233） |
+| 节点关联 | `filter id="filter_35_279"`（即节点 35:279） | filter/结果 id 嵌节点 id（`:`→`_`），节点级 SVG 可关联 |
+
+⚠️ 沙箱铁律三：**节点内部方法不可摘下裸调用**——`const f = node.exportAsync; f(…)` 报 `Expected node, got undefined`（内部实现依赖 this），必须 `node.exportAsync(…)` 或 `f.call(node, …)`。
+
+**实测铁律三已影响实现**：探针⑨已面板化（插件面板按钮触发，走 ui↔main 本地通道 probe.export），主线程侧调用 `exporter.call(node, …)`（main.ts）；字节→串用 String.fromCharCode 逐字节拼（TextDecoder 主线程未实测不引入）。
+
+### export_asset 真实稿全链路实测（探针⑩ ✅，2026-11-17）
+
+真实设计稿（货场管理系统，MCP 工具 list_frames → get_structure → export_asset 逐级实测）：
+
+- **探针⑩通过**：original 路径 `imageHash → getImageByHash → getBytesAsync` 运行时实证可用。IMAGE fill 节点（RECTANGLE「truck_container_2_5D_transparent.png」7:6）auto 决策正确走 original，1,088,044 字节原图完整落盘；显式 original（8:125）1,357,569 字节同过
+- **魔数核验**：original 字节头 `89504e47 0d0a1a0a + IHDR`（PNG 原图），detectImageExt 判定正确；JPG 头 `ffd8ffe0+JFIF`、SVG 文本 `<svg xmlns=`，三格式全对
+- **postMessage 大消息上限（遗留 TODO 项）间接实证**：1.36MB 字节 → base64 约 1.8MB，经 iframe→main→WS JSON 帧→daemon 全链路无截断——1.8MB 级安全，更大未测
+- **auto 决策树真稿验证**：图标画板（无 IMAGE fill）→ svg ✅；IMAGE fill RECTANGLE → original ✅，两分支均正确
+- **SVG 尺寸 = 内容包围盒，非画板尺寸**：多云画板 49×49，SVG 输出 `width="58" height="49.5"`——画板未裁剪（clipContent=false）时子元素溢出画板边界，官方 exportAsync 按实际可见范围输出。消费方按 SVG 实际尺寸用，勿假设等于画板 w×h
+- **渐变 fill 形态**（补 GRADIENT 分支参考）：`fill="url(#linear_fill_43_7)"` + `<linearGradient>` 定义；id 嵌节点 id 模式再证（`linear_fill_43_7` / `filter_43_8` ← 43:7 / 43:8）；阴影效果以 `<foreignObject>` 包裹呈现（本节点形态）
+- **错误路径**：不存在 nodeId → isError +「未找到节点 xxx（可能已被删除）」友好提示 + hint，无堆栈泄漏
+- **scale 实测**：2x/4x 体积按面积比增长（10K→24.7K）；8MB 护栏未触发（本次最大 1.36MB）
+- 小瑕疵：节点名自带 `.png` 时落盘文件名出现双 `.png`（`xxx.png-7_6.png`），无害（ext 由魔数定非文件名）
 
 ### 遗留 TODO(实测) 清单（1a 关闭时转入步骤 6 真实稿验证）
 
-- GRADIENT_* paint 结构（gradientStops/gradientTransform）→ css-map linear-gradient 分支
+- GRADIENT_* paint 结构（gradientStops/gradientTransform）→ css-map linear-gradient 分支（SVG 形态已见 `linearGradient`，原语结构待 dump）
 - Effect 实值（DROP_SHADOW 的 color/offset/radius）→ box-shadow 分支
-- IMAGE paint 结构（imageHash/scaleMode）→ serialize raw 兜底 + 切图
+- ~~IMAGE paint 结构（imageHash/scaleMode）~~ → **导出路径已通（探针⑩，见 export_asset 实测节）**；paint 原语字段结构仍待 dump（css-map IMAGE note 分支用）
 - dashPattern 实值（虚线边框）
 - 自动布局 HORIZONTAL/VERTICAL 实值组（itemSpacing/padding 实数）→ display:flex 分支
 - 混排文本 mixed 形态（fontSize 等返回特殊值时的样子）
@@ -259,6 +314,7 @@ DocumentNode / PageNode / FrameNode / GroupNode / RectangleNode / EllipseNode / 
 - **`rectangleCornerRadii` 常态 null**（仅四角各自设置时才有值）；`cornerRadius` 单数值
 - **`blendMode` 两层含义**：节点级实测 `PASS_THROUGH`，Paint 级实测 `NORMAL`
 - **`fills`/`strokes`/`effects` 均为数组**（空即 `[]`，不省略）
+- **⚠️ TEXT 节点的 `fills` = 文字填充色，不是背景色**（2026-11-17 真稿对照实测：TEXT"注册页面" `fills[0]` = rgb(0,199,186)=#00C7BA，与 UI 稿 Dev Mode 面板「填充 00C7BA」逐位吻合，即文字颜色；TEXT 无独立背景属性）。css-map 必须按 `type==='TEXT'` 把 fills 映射为 CSS `color`，其余节点才是 `background-color`——首版统一映射成 background-color 属实现 bug，已被真稿对照揪出
 - **`strokeAlign` 实测两态**：FRAME 白板 'INSIDE'、RECTANGLE 描边 'CENTER'（端到端验收快照确认，css-map border 映射需带上）
 - **节点 id 形如 `"5:1"`**（Figma 风格 server:uid）
 - 自动布局字段组（layoutMode/itemSpacing/padding*/primaryAxisAlignItems/counterAxisAlignItems）在非自动布局 FRAME 上返回 `NONE`/0/`MIN` 默认值

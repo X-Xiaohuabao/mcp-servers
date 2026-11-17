@@ -8,6 +8,9 @@
  *   - config.json   ZCode hooks 接线；Claude 侧对应 settings.json
  *   - settings*.json 仅 Claude 侧存在，不碰
  *
+ * 阶段 0（集成包内置技能收割）：packages/<集成名>/skill/ → .zcode/skills/<集成名>/
+ *   集成包是技能的上游源；.zcode 侧副本为生成物（勿手改），删除集成包技能后需手动删 .zcode/.claude 两侧副本。
+ *
  * 用法：
  *   node scripts/sync-agent-config.mjs          覆盖写入
  *   node scripts/sync-agent-config.mjs --check  只校验，存在差异时退出码为 1
@@ -71,6 +74,63 @@ function sameContent(expected, targetAbsolute) {
 if (!fs.existsSync(sourceRoot)) {
   console.error(`源目录不存在: ${sourceRoot}`);
   process.exit(1);
+}
+
+// ---------- 阶段 0：集成包内置技能收割（packages/<集成名>/skill/ → .zcode/skills/<集成名>/） ----------
+// 集成包是技能上游源；.zcode 侧副本是生成物。识别条件：包目录下存在 skill/SKILL.md。
+
+const PACKAGES_DIR = path.join(rootDir, 'packages');
+
+function collectPackageSkillEntries() {
+  const result = [];
+  if (!fs.existsSync(PACKAGES_DIR)) return result;
+  let packages;
+  try {
+    packages = fs.readdirSync(PACKAGES_DIR, { withFileTypes: true });
+  } catch {
+    return result;
+  }
+  for (const entry of packages) {
+    if (!entry.isDirectory()) continue;
+    const skillDir = path.join(PACKAGES_DIR, entry.name, 'skill');
+    if (!fs.existsSync(path.join(skillDir, 'SKILL.md'))) continue;
+    const files = [];
+    collectFiles(skillDir, skillDir, files);
+    for (const file of files) {
+      result.push({
+        sourceAbsolute: file.absolute,
+        targetAbsolute: path.join(sourceRoot, 'skills', entry.name, path.relative(skillDir, file.absolute)),
+      });
+    }
+  }
+  return result;
+}
+
+const packageSkillEntries = collectPackageSkillEntries();
+if (checkOnly) {
+  const pkgMissing = [];
+  const pkgChanged = [];
+  for (const { sourceAbsolute, targetAbsolute } of packageSkillEntries) {
+    if (!fs.existsSync(targetAbsolute)) {
+      pkgMissing.push(toRelativeSafe(targetAbsolute));
+    } else if (!sameContent(fs.readFileSync(sourceAbsolute), targetAbsolute)) {
+      pkgChanged.push(toRelativeSafe(targetAbsolute));
+    }
+  }
+  if (pkgMissing.length > 0) console.error(`包技能缺少: ${pkgMissing.join(', ')}`);
+  if (pkgChanged.length > 0) console.error(`包技能不一致: ${pkgChanged.join(', ')}`);
+  if (pkgMissing.length > 0 || pkgChanged.length > 0) {
+    console.error('请运行 node scripts/sync-agent-config.mjs');
+    process.exit(1);
+  }
+} else {
+  for (const { sourceAbsolute, targetAbsolute } of packageSkillEntries) {
+    fs.mkdirSync(path.dirname(targetAbsolute), { recursive: true });
+    fs.copyFileSync(sourceAbsolute, targetAbsolute);
+  }
+  if (packageSkillEntries.length > 0) {
+    console.log(`包技能收割完成（${packageSkillEntries.length} 个文件，packages/*/skill → .zcode/skills）`);
+  }
 }
 
 // 构造同步清单：{ sourceAbsolute, targetAbsolute, mirrorRelative }
