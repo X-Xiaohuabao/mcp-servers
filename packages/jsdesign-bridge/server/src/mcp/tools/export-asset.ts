@@ -63,6 +63,7 @@ export function registerExportAsset(server: McpServer, daemon: DaemonHandle): vo
           bytes: bytes.length,
           ext,
           format: result.format,
+          note: result.note,
           node: { nodeId, name: result.nodeName, type: result.nodeType },
         },
         ext === 'svg'

@@ -26,10 +26,14 @@ export function registerListAssets(server: McpServer, daemon: DaemonHandle): voi
         return fail(`画板「${snapshot.name}」未枚举到图形资产（全是文本/背景/容器）——此类元素由 CSS/DOM 直接还原，无需切图`);
       }
       const bitmapCount = assets.filter((a) => a.kind === 'bitmap').length;
+      const overlapCount = assets.filter((a) => a.overlapText).length;
       return jsonOk(
         { frame: { frameId, name: snapshot.name }, total: assets.length, bitmapCount, vectorCount: assets.length - bitmapCount, assets },
         'bitmap 类逐个 export_asset（走原图字节/位图）；vector 类先用组件库图标语义匹配，库中没有的再 export_asset（SVG）；' +
-          '纯色/渐变背景用 CSS 还原不切图。产物落盘路径以 export_asset 返回为准。',
+          '纯色/渐变背景用 CSS 还原不切图。产物落盘路径以 export_asset 返回为准。' +
+          (overlapCount > 0
+            ? ` ⚠ ${overlapCount} 个 bitmap 与文本节点空间重叠（overlapText）——可能含烧死文字，勿直接当背景：改切图形子节点、文字用 HTML。`
+            : ''),
       );
     },
   );

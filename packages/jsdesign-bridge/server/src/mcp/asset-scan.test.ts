@@ -86,3 +86,19 @@ test('TEXT 与纯色矩形背景不入选；渐变背景矩形（无文字）按
   const list = scanGraphicAssets(tree);
   assert.equal(list.length, 0); // 渐变背景矩形属于 CSS 可还原，不作为图形候选
 });
+
+test('bitmap 与文本空间重叠 → overlapText 警示（烧死文字嫌疑）；无重叠不标', () => {
+  const tree = node({
+    id: 'f', name: '画板', type: 'FRAME',
+    children: [
+      node({ id: 'banner-bitmap', name: '成品横幅', type: 'RECTANGLE', width: 200, height: 60, fills: IMAGE_FILL as RawNode['fills'] }),
+      node({ id: 'burned-text', name: '旧文字', type: 'TEXT', x: 20, y: 10, fontSize: 12, characters: '40分钟' }),
+      node({ id: 'clean-bitmap', name: '干净大图', type: 'RECTANGLE', x: 0, y: 200, width: 200, height: 60, fills: IMAGE_FILL as RawNode['fills'] }),
+    ],
+  });
+  const list = scanGraphicAssets(tree);
+  assert.equal(list.length, 2);
+  assert.equal(list[0].kind, 'bitmap');
+  assert.equal(list[0].overlapText, true); // 与 TEXT 空间重叠 → 烧死文字嫌疑
+  assert.equal(list[1].overlapText, undefined); // 无文本重叠
+});

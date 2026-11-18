@@ -15,6 +15,8 @@ export interface AssetCandidate {
   height: number;
   /** bitmap=IMAGE 填充（原图字节/位图导出）；vector=纯图形节点（SVG 导出候选） */
   kind: 'bitmap' | 'vector';
+  /** 仅 bitmap：与同画板文本节点空间重叠 → 位图可能含烧死文字（慎用，改切图形子节点 + 文字用 HTML） */
+  overlapText?: boolean;
 }
 
 /** 纯图形节点类型：整棵子树通常都是图形，适合整体导出为 SVG */
@@ -35,21 +37,43 @@ function isVisible(node: RawNode): boolean {
   return node.visible !== false && node.opacity !== 0;
 }
 
-/** 深度优先扫描：命中候选即收录并停止下钻（图标内部的路径不逐个列出） */
+interface Rect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+function boxesOverlap(a: Rect, b: Rect): boolean {
+  return a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+}
+
+/** 深度优先扫描：命中候选即收录并停止下钻（图标内部的路径不逐个列出）；
+ *  另收集 TEXT 节点包围盒，bitmap 候选与文本空间重叠时标 overlapText（可能含烧死文字） */
 export function scanGraphicAssets(root: RawNode): AssetCandidate[] {
-  const out: AssetCandidate[] = [];
+  const textBoxes: Rect[] = [];
+  const found: Array<{ candidate: AssetCandidate; rect: Rect; isBitmap: boolean }> = [];
+
   const walk = (node: RawNode): void => {
     if (!isVisible(node)) return;
+    if (node.type === 'TEXT') {
+      textBoxes.push({ x: node.x, y: node.y, width: node.width, height: node.height });
+      return;
+    }
     const isBitmap = hasVisibleImageFill(node);
     const isGraphic = GRAPHIC_TYPES.has(node.type) && !hasTextDescendant(node);
     if (isBitmap || isGraphic) {
-      out.push({
-        nodeId: node.id,
-        name: typeof node.name === 'string' ? node.name : '',
-        type: typeof node.type === 'string' ? node.type : '',
-        width: node.width,
-        height: node.height,
-        kind: isBitmap ? 'bitmap' : 'vector',
+      found.push({
+        candidate: {
+          nodeId: node.id,
+          name: typeof node.name === 'string' ? node.name : '',
+          type: typeof node.type === 'string' ? node.type : '',
+          width: node.width,
+          height: node.height,
+          kind: isBitmap ? 'bitmap' : 'vector',
+        },
+        rect: { x: node.x, y: node.y, width: node.width, height: node.height },
+        isBitmap,
       });
       return;
     }
@@ -57,5 +81,10 @@ export function scanGraphicAssets(root: RawNode): AssetCandidate[] {
     children.forEach(walk);
   };
   walk(root);
-  return out;
+
+  return found.map(({ candidate, rect, isBitmap }) => {
+    if (!isBitmap) return candidate;
+    const overlapText = textBoxes.some((t) => boxesOverlap(rect, t));
+    return overlapText ? { ...candidate, overlapText: true } : candidate;
+  });
 }

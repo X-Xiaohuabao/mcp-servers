@@ -184,6 +184,8 @@ export type PluginToDaemon =
       nodeName: string;
       nodeType: string;
       format: Exclude<AssetFormat, 'auto'> | 'bin';
+      /** auto 决策说明（如"显示尺寸 ≤128px 改走 PNG@2x"），供 AI/用户了解格式选择原因 */
+      note?: string;
     }
   | { type: 'asset.export.result'; requestId: string; ok: false; error: string };
 

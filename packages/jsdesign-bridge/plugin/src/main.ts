@@ -83,12 +83,19 @@ function postAsset(requestId: string, payload: PluginToDaemon): void {
   jsDesign.ui.postMessage(payload);
 }
 
-/** auto 决策：fills 含可见 IMAGE → original（原图字节）；否则 svg（矢量图标首选） */
-function resolveAssetFormat(node: SourceNode, requested: AssetExportRequest['format']): AssetExportRequest['format'] {
-  if (requested !== 'auto') return requested;
+/** auto 决策：fills 含可见 IMAGE → 按显示尺寸分流（≤128px 小图标走 PNG@2x 防原图字节过大，>128px 大图才取原图字节）；否则 svg（矢量图标首选） */
+function resolveAssetFormat(node: SourceNode, requested: AssetExportRequest['format']): { format: AssetExportRequest['format']; autoNote?: string } {
+  if (requested !== 'auto') return { format: requested };
   const paints = Array.isArray(node.fills) ? node.fills : [];
   const hasImage = paints.some((p) => p.type === 'IMAGE' && p.visible !== false);
-  return hasImage ? 'original' : 'svg';
+  if (!hasImage) return { format: 'svg' };
+  const width = typeof node.width === 'number' ? node.width : 0;
+  const height = typeof node.height === 'number' ? node.height : 0;
+  const maxDim = Math.max(width, height);
+  if (maxDim <= 128) {
+    return { format: 'png', autoNote: `auto 决策：显示尺寸 ${maxDim}px ≤128px，改走 PNG@2x（原图字节模式对图标会产生 MB 级冗余文件）` };
+  }
+  return { format: 'original' };
 }
 
 function onAssetExport(request: AssetExportRequest): void {
@@ -109,7 +116,7 @@ function onAssetExport(request: AssetExportRequest): void {
         failReply(`节点 "${nodeName}" 无 exportAsync 接口`);
         return;
       }
-      const format = resolveAssetFormat(node, request.format);
+      const { format, autoNote } = resolveAssetFormat(node, request.format);
 
       const replyBytes = (ext: 'svg' | 'png' | 'jpg' | 'bin', bytes: Uint8Array, usedFormat: string): void => {
         postAsset(request.requestId, {
@@ -121,6 +128,7 @@ function onAssetExport(request: AssetExportRequest): void {
           nodeName,
           nodeType,
           format: usedFormat as 'svg' | 'png' | 'jpg' | 'bin',
+          note: autoNote,
         });
       };
 

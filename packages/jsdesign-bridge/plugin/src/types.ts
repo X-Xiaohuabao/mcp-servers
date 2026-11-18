@@ -150,6 +150,8 @@ export type PluginToDaemon =
       nodeName: string;
       nodeType: string;
       format: Exclude<AssetFormat, 'auto'> | 'bin';
+      /** auto 决策说明（镜像源：server/src/protocol/messages.ts） */
+      note?: string;
     }
   | { type: 'asset.export.result'; requestId: string; ok: false; error: string };
 
