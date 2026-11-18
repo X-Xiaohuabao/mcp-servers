@@ -49,15 +49,20 @@ function boxesOverlap(a: Rect, b: Rect): boolean {
 }
 
 /** 深度优先扫描：命中候选即收录并停止下钻（图标内部的路径不逐个列出）；
- *  另收集 TEXT 节点包围盒，bitmap 候选与文本空间重叠时标 overlapText（可能含烧死文字） */
+ *  另收集 TEXT 节点包围盒，bitmap 候选与文本空间重叠时标 overlapText（可能含烧死文字）。
+ *  坐标归一化：快照 x/y 相对各自父容器（serialize 透传插件 API 语义），判重叠前按父偏移
+ *  累计折算到画板根坐标系——否则跨子树比较恒错（台账三十五次假阳性实证：横幅局部 rect
+ *  撞导航标题、小图标撞状态栏时间）。包围盒不含旋转补偿，警示用途可接受近似 */
 export function scanGraphicAssets(root: RawNode): AssetCandidate[] {
   const textBoxes: Rect[] = [];
   const found: Array<{ candidate: AssetCandidate; rect: Rect; isBitmap: boolean }> = [];
 
-  const walk = (node: RawNode): void => {
+  const walk = (node: RawNode, offX: number, offY: number): void => {
     if (!isVisible(node)) return;
+    const absX = offX + node.x;
+    const absY = offY + node.y;
     if (node.type === 'TEXT') {
-      textBoxes.push({ x: node.x, y: node.y, width: node.width, height: node.height });
+      textBoxes.push({ x: absX, y: absY, width: node.width, height: node.height });
       return;
     }
     const isBitmap = hasVisibleImageFill(node);
@@ -72,15 +77,15 @@ export function scanGraphicAssets(root: RawNode): AssetCandidate[] {
           height: node.height,
           kind: isBitmap ? 'bitmap' : 'vector',
         },
-        rect: { x: node.x, y: node.y, width: node.width, height: node.height },
+        rect: { x: absX, y: absY, width: node.width, height: node.height },
         isBitmap,
       });
       return;
     }
     const children = Array.isArray(node.children) ? node.children : [];
-    children.forEach(walk);
+    children.forEach((c) => walk(c, absX, absY));
   };
-  walk(root);
+  walk(root, 0, 0);
 
   return found.map(({ candidate, rect, isBitmap }) => {
     if (!isBitmap) return candidate;
