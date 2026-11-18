@@ -139,7 +139,13 @@ function mapText(node: RawNode, css: Css, notes: string[]): void {
   if (node.lineHeight !== null) {
     if (node.lineHeight.unit === 'PIXELS') css['line-height'] = `${node.lineHeight.value}px`;
     else if (node.lineHeight.unit === 'PERCENT') css['line-height'] = `${node.lineHeight.value}%`;
-    else notes.push('line-height 为 AUTO（官方换算公式未实测，未输出；原始结构见 raw.lineHeight）');
+    else if (node.fontSize !== null && node.fontSize > 0) {
+      // AUTO 行高：真稿实测规律 1.5×fontSize（车辆管理对照；单点实测，TODO 多字体/多字号样本验证）
+      css['line-height'] = `${Math.round(node.fontSize * 1.5 * 100) / 100}px`;
+      notes.push('line-height 为 AUTO：按实测规律 1.5×fontSize 换算（TODO 多样本验证），原始值见 raw.lineHeight');
+    } else {
+      notes.push('line-height 为 AUTO 且无有效 fontSize（未换算；原始结构见 raw.lineHeight）');
+    }
   }
   if (node.letterSpacing !== null && node.letterSpacing.value !== 0) {
     css['letter-spacing'] = node.letterSpacing.unit === 'PIXELS' ? `${node.letterSpacing.value}px` : `${node.letterSpacing.value}%`;

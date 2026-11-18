@@ -54,8 +54,8 @@ test('实测 TEXT → css：颜色 0-1 转 rgb、字号字体、AUTO 行高出 n
   assert.equal(css['font-size'], '72px');
   assert.equal(css['font-family'], 'SourceHanSansCN');
   assert.equal(css['font-weight'], '400');
-  assert.ok(notes.some((n) => n.includes('AUTO')), 'AUTO 行高应出 note');
-  assert.equal(css['line-height'], undefined);
+  assert.ok(notes.some((n) => n.includes('AUTO')), 'AUTO 行高应出说明 note');
+  assert.equal(css['line-height'], '108px'); // AUTO：实测规律 72 × 1.5 = 108（TODO 多样本验证）
 });
 
 test('实测 RECTANGLE → css：描边 border + strokeAlign note', () => {
