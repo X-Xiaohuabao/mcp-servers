@@ -44,8 +44,18 @@ interface Rect {
   height: number;
 }
 
-function boxesOverlap(a: Rect, b: Rect): boolean {
-  return a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+/** overlapText 判定阈值：文本包围盒被位图覆盖的比例 ≥ 50% 才算「烧死文字嫌疑」。
+ *  烧死文字必然整字落在位图像素内（8:125 横幅「45 分钟」覆盖率 100%）；而位图溢出
+ *  图标框擦碰文字区几 px 的场景（8:81 黄卡车压车牌 ~7%、压徽章 ~18%，真机复验实证）
+ *  视觉上无烧死风险，不标。比例判据比绝对 px 阈值更稳（尺度无关） */
+const OVERLAP_TEXT_MIN_COVERAGE = 0.5;
+
+/** 文本 rect 被位图 rect 覆盖的面积比例（0~1；不相交为 0） */
+function textCoverage(text: Rect, bitmap: Rect): number {
+  const w = Math.min(text.x + text.width, bitmap.x + bitmap.width) - Math.max(text.x, bitmap.x);
+  const h = Math.min(text.y + text.height, bitmap.y + bitmap.height) - Math.max(text.y, bitmap.y);
+  if (w <= 0 || h <= 0) return 0;
+  return (w * h) / (text.width * text.height);
 }
 
 /** 深度优先扫描：命中候选即收录并停止下钻（图标内部的路径不逐个列出）；
@@ -89,7 +99,7 @@ export function scanGraphicAssets(root: RawNode): AssetCandidate[] {
 
   return found.map(({ candidate, rect, isBitmap }) => {
     if (!isBitmap) return candidate;
-    const overlapText = textBoxes.some((t) => boxesOverlap(rect, t));
+    const overlapText = textBoxes.some((t) => textCoverage(t, rect) >= OVERLAP_TEXT_MIN_COVERAGE);
     return overlapText ? { ...candidate, overlapText: true } : candidate;
   });
 }

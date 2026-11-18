@@ -160,3 +160,43 @@ test('跨子树局部坐标巧合不误报：状态栏时间文字不应命中�
   assert.equal(list[0].nodeId, '7:6');
   assert.equal(list[0].overlapText, undefined);
 });
+
+test('真机复验残留回归：8:81 黄卡车溢出图标框擦碰文字区（覆盖率 ~7%/~18%）→ 不标', () => {
+  const tree = node({
+    id: '8:1', name: '车辆管理', type: 'FRAME',
+    children: [
+      node({
+        id: '8:77', name: '画板 4', type: 'FRAME', x: 32, y: 234, width: 50, height: 50,
+        children: [
+          node({ id: '8:81', name: 'truck_yellow.png', type: 'RECTANGLE', x: 46, y: 12, width: 42.09, height: 25.97, fills: IMAGE_FILL as RawNode['fills'] }),
+        ],
+      }),
+      // 归一化后位图 x 78~120.09 / y 246~271.97：与车牌交集 4×23px、与徽章 3×18px——
+      // 归一化后的真实几何交集，但覆盖率远低于烧死文字阈值（复验会话实测）
+      node({ id: '8:45', name: '12·1235', type: 'TEXT', x: 97, y: 229, width: 64, height: 21, fontSize: 14, characters: '12·1235' }),
+      node({ id: '8:72', name: '冻结', type: 'TEXT', x: 102, y: 269, width: 20, height: 15, fontSize: 10, characters: '冻结' }),
+    ],
+  });
+  const list = scanGraphicAssets(tree);
+  assert.equal(list.length, 1);
+  assert.equal(list[0].nodeId, '8:81');
+  assert.equal(list[0].overlapText, undefined);
+});
+
+test('覆盖率阈值：文本 ≥50% 落入位图 → 标注（含边界）；<50% 边缘擦碰 → 不标', () => {
+  const tree = node({
+    id: 'f', name: '画板', type: 'FRAME',
+    children: [
+      // textA 40×20 在 {0,-10}：与位图交集 40×10 = 400/800 = 恰 50% → ≥ 含边界标注
+      node({ id: 'half-bitmap', name: '半含位图', type: 'RECTANGLE', width: 100, height: 100, fills: IMAGE_FILL as RawNode['fills'] }),
+      node({ id: 'text-a', name: '半入文字', type: 'TEXT', x: 0, y: -10, width: 40, height: 20, fontSize: 12, characters: 'A' }),
+      // textB 40×20 在 {150,-12}：与位图交集 40×8 = 320/800 = 40% → 不标
+      node({ id: 'far-bitmap', name: '擦碰位图', type: 'RECTANGLE', x: 150, width: 100, height: 100, fills: IMAGE_FILL as RawNode['fills'] }),
+      node({ id: 'text-b', name: '擦碰文字', type: 'TEXT', x: 150, y: -12, width: 40, height: 20, fontSize: 12, characters: 'B' }),
+    ],
+  });
+  const list = scanGraphicAssets(tree);
+  const byId = Object.fromEntries(list.map((a) => [a.nodeId, a]));
+  assert.equal(byId['half-bitmap'].overlapText, true);
+  assert.equal(byId['far-bitmap'].overlapText, undefined);
+});
