@@ -1,0 +1,392 @@
+/* ============================================================
+ * 车辆管理 —— 校准稿（第④步：get_node_css 真值 + get_structure 尺寸）
+ * 基线：nodeId 8:1，画板 375×812，fileName「货场管理系统」
+ * 日期：2026-11-18
+ * 真值来源标注：[真值]=css 轨/SVG 轨实测；[结构]=结构树 pos/padding 推导；
+ *               [近似]=未取真值，仍为目测（下一轮校准对象）
+ * ============================================================ */
+
+:root {
+  --color-page-bg: #e9f1fe;        /* [真值 8:1] rgb(233,241,254) */
+  --color-card-bg: #ffffff;
+  --color-text-main: #1c2b45;      /* [近似] 深藏青标题色 */
+  --color-text-sub: #98a2b3;       /* [近似] 灰色次要文字 */
+  --color-accent-orange: #ff9027;  /* [近似] 等待时长橙 */
+  --color-tab-active: #2f7bf6;     /* [近似] Tab 激活蓝 */
+  --color-divider: #eef2f8;        /* [近似] 历史行分隔线（设计稿无独立分隔线节点，取底色系近似） */
+
+  --nav-height: 44px;              /* [结构 8:18] */
+  --tab-height: 70px;              /* [结构 96:44] */
+  --radius-card: 20px;             /* [近似] 卡片圆角 */
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; }
+
+body {
+  width: 100%;
+  /* [真值 8:92] fontName=SourceHanSansCN；web font 同源 Noto Sans SC，本地优先 */
+  font-family: "SourceHanSansCN", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: var(--color-text-main);
+  background: var(--color-page-bg);
+  line-height: 1.5; /* [真值规律] AUTO 行高 = 1.5 × fontSize */
+}
+
+button {
+  border: none;
+  padding: 0;
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+ul { list-style: none; margin: 0; padding: 0; }
+p  { margin: 0; }
+
+img { display: block; }
+
+/* ---------- 顶部导航（fixed） ---------- */
+.nav-bar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 10;
+  height: var(--nav-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 15px;                 /* [结构 8:21] 返回按钮 x=15 */
+  background: var(--color-page-bg);
+}
+
+.nav-back {
+  width: 24px;                     /* [结构 8:21] 24×24 */
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-back-icon { width: 9px; height: 16px; } /* [结构 8:22] 矢量 9×16 */
+
+.nav-title {
+  margin: 0;
+  font-size: 18px;                 /* [结构 8:20] 高 27 = 1.5 × 18 */
+  font-weight: 700;                /* [近似] */
+  color: var(--color-text-main);
+}
+
+.nav-spacer { width: 24px; }
+
+/* ---------- 内容区：独立滚动 ---------- */
+.page-scroll {
+  width: 100%;
+  height: calc(100vh - var(--nav-height) - var(--tab-height));
+  margin-top: var(--nav-height);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 页面容器：宽 100% 自适应，高度由内容撑开；[结构] 卡片左右边距 12 */
+.page-inner {
+  width: 100%;
+  padding: 12px 12px 5px;
+}
+
+/* ---------- 通用卡片 ---------- */
+.card {
+  background: var(--color-card-bg);
+  border-radius: var(--radius-card);
+  padding: 10px;                   /* [结构] 图标距卡边 10，行距卡边 10 */
+  box-shadow: 0 2px 10px rgba(28, 43, 69, 0.04); /* [近似] */
+}
+
+.card + .card { margin-top: 12px; } /* [结构] 卡一 305 → 卡二 317 */
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;                       /* [结构] 图标 22..42，标题 x=52 */
+  margin-bottom: 10px;             /* [结构] 标题底 131 → 首行 141 */
+}
+
+.card-header-icon {
+  width: 20px;                     /* [结构 8:66] 20×20 */
+  height: 20px;
+  border-radius: 6px;              /* [近似] */
+  background: linear-gradient(180deg, #5b93ff, #2f6bff); /* [近似] */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-header-icon img { width: 16px; height: 16px; } /* [结构 8:68] glyph 16×16 */
+
+.card-title {
+  margin: 0;
+  font-size: 14px;                 /* [结构 8:65] 高 21 = 1.5 × 14 */
+  font-weight: 700;                /* [近似] */
+  color: var(--color-text-main);
+}
+
+/* ---------- 我的车辆：车辆行子卡 ---------- */
+.vehicle-list { margin-top: 0; }
+
+.vehicle-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;                       /* [结构] 图块 32..82，文字 x=97 */
+  min-height: 72px;                /* [结构 8:62] 331×72 */
+  padding: 10px 19px 10px 10px;    /* [结构] 左 10（图块 x32-行x22）、右 19（按钮右缘距行右缘） */
+  border-radius: 12px;             /* [真值 8:62] */
+  border: 1px solid #ffffff;       /* [真值 8:62] 白描边 */
+  /* [真值 8:62] 浅蓝渐变 tint + 蓝调投影（人工核验第 2 条修正） */
+  background-image: linear-gradient(100deg, #f2f6fd 0%, #f3f7fd 100%);
+  box-shadow: 0 2px 6px rgba(142, 194, 237, 0.32);
+}
+
+.vehicle-item + .vehicle-item { margin-top: 10px; } /* [结构] 行一底 213 → 行二顶 223 */
+
+/* 位图块：50×50 图块（真值切图已入 assets/） */
+.truck-img {
+  flex: none;
+  width: 50px;                     /* [结构 8:64] 50×50 */
+  height: 50px;
+  border-radius: 12px;             /* [近似] */
+  background: #f0f4fc;             /* [近似] 图块底 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.truck-pic--container { width: 37px; height: 25px; } /* [结构 7:6] */
+.truck-pic--box       { width: 42px; height: 26px; } /* [结构 8:81] */
+
+.truck-shadow {                      /* [结构 8:63/8:79] 图下车影线 32×2 */
+  width: 32px;
+  height: 2px;
+  border-radius: 1px;
+  background: rgba(28, 43, 69, 0.18); /* [近似] */
+}
+
+.vehicle-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;                        /* [结构] 类型底 185 → 徽章顶 187 */
+}
+
+.vehicle-plate {
+  font-size: 14px;                 /* [结构 8:45] 高 21 = 1.5 × 14 */
+  font-weight: 700;                /* [近似] */
+  color: var(--color-text-main);
+}
+
+.vehicle-type {
+  font-size: 12px;                 /* [结构 8:48] 高 18 = 1.5 × 12 */
+  color: var(--color-text-sub);
+}
+
+.vehicle-actions {
+  flex: none;
+  display: flex;
+  gap: 10px;                       /* [结构] 按钮 256..290 / 300..334 */
+}
+
+.action-btn {
+  width: 33px;                     /* [结构 8:132] 33×33 */
+  height: 33px;
+  border-radius: 8px;              /* [近似] */
+  background: #f2f5fb;             /* [近似] 拟物浅底（删除按钮） */
+  box-shadow: 0 2px 6px rgba(28, 43, 69, 0.08); /* [近似] */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* 编辑按钮：整按钮为一张位图（真值切图 8:130） */
+.action-btn--img { background: none; box-shadow: none; }
+.action-btn--img img { width: 100%; height: 100%; }
+
+.action-icon { width: 19px; height: 19px; } /* [结构 8:133 内 glyph] 19×19 */
+
+/* ---------- 状态徽章（组件尺寸：[结构 8:91] 29×15，[真值 8:92] 10px/Medium） ---------- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  height: 15px;
+  padding: 0 4.5px;                /* [结构] 底 29 宽 / 字 20 宽 */
+  border-radius: 3px;              /* [真值 8:91] */
+  font-size: 10px;                 /* [真值 8:92] */
+  font-weight: 500;                /* [真值 8:92] Medium */
+  line-height: 1.5;
+}
+
+.badge--normal   { background: #ddf6e4; color: #2eb554; }             /* [近似] 正常：绿 */
+.badge--frozen   { background: #fdf0d7; color: #f5a623; }             /* [近似] 冻结：橙黄 */
+/* [真值 8:91/8:92] 进口：蓝（人工核验第 3 条「应为绿」与设计稿真值不符，按真值修） */
+.badge--import   { background: #e0ebfd; color: #4d85ff; border: 0.5px solid #4d85ff; }
+.badge--unload   { background: #efeafe; color: #8f6bf0; }             /* [近似] 卸货：紫 */
+.badge--export   { background: #dcf6e9; color: #22b573; }             /* [近似] 出口：绿 */
+.badge--transfer { background: #d8f5ef; color: #12b3a2; }             /* [近似] 调装：青 */
+
+/* ---------- 排队历史：单张白卡 + 行间细分隔线（人工核验第 1 条修正） ---------- */
+.history-list { margin-top: 0; }
+
+.history-item {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 61px;                /* [结构 8:88] 331×61 */
+  padding: 10px;                   /* [结构] 编号 x32-行x22、顶 368-行 358 */
+}
+
+.history-item + .history-item {
+  border-top: 1px solid var(--color-divider); /* [近似：设计稿无分隔线节点，色值取底色系] */
+}
+
+.history-left {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 2px;                        /* [结构] 编号底 389 → 牌照行顶 391 */
+}
+
+.history-code {
+  font-size: 14px;                 /* [结构 8:89] 高 21 = 1.5 × 14 */
+  font-weight: 700;                /* [近似] */
+  color: var(--color-text-main);
+}
+
+.history-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;                       /* [结构] 徽章底 96..125 / 135..164 */
+  flex-wrap: wrap;
+}
+
+.history-plate {
+  font-size: 12px;                 /* [结构 8:90] 高 18 = 1.5 × 12 */
+  color: var(--color-text-sub);
+}
+
+.history-right {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2px;
+}
+
+.history-wait {
+  font-size: 14px;                 /* [结构 8:96] 高 21 = 1.5 × 14 */
+  font-weight: 700;                /* [近似] */
+  color: var(--color-accent-orange);
+}
+
+.history-date {
+  font-size: 12px;                 /* [结构 8:95] 高 18 = 1.5 × 12 */
+  color: var(--color-text-sub);
+}
+
+/* ---------- 等待时长横幅：位图背景 + 遮盖矩形 + 真值文字层（同设计稿 8:125/8:127/8:128/8:129 结构） ---------- */
+.wait-banner {
+  position: relative;              /* 遮盖层的定位上下文 */
+  margin-top: 10px;                /* [结构] 卡二底 642 → 横幅顶 652 */
+  height: 85px;                    /* [结构 8:126] 351×85 */
+  border-radius: var(--radius-card); /* [近似] */
+  overflow: hidden;
+  background-image: url("assets/banner-wait.png"); /* [真值切图 8:125，图中烧死旧数据 40分钟] */
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+/* 遮盖矩形：[真值 8:127] #FDF7EC 100×60@(143,13)；向四周外扩数 px 盖全烧死文字（平底色区，外扩不可见） */
+.banner-cover {
+  position: absolute;
+  left: 139px;
+  top: 9px;
+  width: 110px;
+  height: 70px;
+  background: #fdf7ec;
+}
+
+.banner-text {
+  position: relative;              /* 文字压在遮盖层上 */
+  z-index: 1;
+  padding: 13px 0 0 142px;         /* [结构] label x=154-横幅x12=142，y=665-横幅y652=13 */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.banner-label {
+  font-size: 12px;                 /* [真值 8:129] */
+  line-height: 18px;               /* [真值 8:129] AUTO = 1.5 × 12 */
+  font-weight: 700;                /* [真值 8:129] Bold */
+  color: #8f9cb6;                  /* [真值 8:129] rgb(143,156,182) */
+}
+
+.banner-value {
+  font-size: 38px;                 /* [结构 8:128] 混合字号盒高 58 ≈ 1.5 × 38 */
+  font-weight: 700;                /* [真值 8:128] Bold */
+  color: #ff8d1a;                  /* [真值 8:128] rgb(255,141,26) */
+  line-height: 58px;
+  margin-top: -9px;                /* [结构] 数值盒顶 674-652=22 = 13+18-9（label 底与数值盒顶设计即重叠） */
+}
+
+.banner-unit {
+  font-size: 19px;                 /* [近似] 「分钟」约为数值一半 */
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+/* ---------- 底部 Tab（fixed） ---------- */
+.tab-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 10;
+  height: var(--tab-height);       /* [结构 96:44] 375×70 */
+  display: flex;
+  align-items: stretch;
+  background: #f5f8fd;             /* [近似] */
+  border-radius: 24px 24px 0 0;    /* [近似] */
+  box-shadow: 0 -2px 10px rgba(28, 43, 69, 0.06); /* [近似] */
+}
+
+.tab-item {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 8px;                /* [结构] 图标 y750-栏顶 742 */
+  gap: 3px;                        /* [结构] 图标底 770 → 文字顶 773 */
+  color: #9aa3b5;                  /* [近似] 未激活灰 */
+}
+
+.tab-item--active { color: var(--color-tab-active); }
+
+.tab-indicator {                     /* [结构 96:48] 14×2，激活项顶部 */
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 14px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--color-tab-active);
+}
+
+.tab-icon { width: 20px; height: 20px; } /* [结构] 20×20 切图 */
+
+.tab-label { font-size: 10px; }      /* [结构] 文字高 15 = 1.5 × 10 */

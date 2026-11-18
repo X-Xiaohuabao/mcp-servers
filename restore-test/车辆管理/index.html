@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>车辆管理</title>
+  <!-- 设计稿字体 SourceHanSansCN（思源黑体）；web font 用同源的 Noto Sans SC，离线时回退本地字体 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-sc@5/index.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- 顶部导航（fixed，高度 44）：左返回 + 居中标题 -->
+  <header class="nav-bar">
+    <button class="nav-back" aria-label="返回">
+      <img class="nav-back-icon" src="assets/icon-back.svg" alt="">
+    </button>
+    <h1 class="nav-title">车辆管理</h1>
+    <span class="nav-spacer" aria-hidden="true"></span>
+  </header>
+
+  <!-- 内容区：独立滚动 -->
+  <main class="page-scroll">
+    <div class="page-inner">
+
+      <!-- 卡片一：我的车辆 -->
+      <section class="card">
+        <header class="card-header">
+          <span class="card-header-icon"><img src="assets/icon-car-badge.svg" alt=""></span>
+          <h2 class="card-title">我的车辆</h2>
+        </header>
+
+        <ul class="vehicle-list">
+          <li class="vehicle-item">
+            <div class="truck-img">
+              <img class="truck-pic truck-pic--container" src="assets/truck-container.png" alt="集装箱卡车">
+              <span class="truck-shadow" aria-hidden="true"></span>
+            </div>
+            <div class="vehicle-info">
+              <p class="vehicle-plate">12 · 1235</p>
+              <p class="vehicle-type">集装箱卡车 · 30吨</p>
+              <span class="badge badge--normal">正常</span>
+            </div>
+            <div class="vehicle-actions">
+              <button class="action-btn action-btn--img" aria-label="编辑">
+                <img src="assets/btn-edit.png" alt="">
+              </button>
+              <button class="action-btn" aria-label="删除">
+                <img class="action-icon" src="assets/icon-delete.svg" alt="">
+              </button>
+            </div>
+          </li>
+
+          <li class="vehicle-item">
+            <div class="truck-img">
+              <img class="truck-pic truck-pic--box" src="assets/truck-yellow.png" alt="箱式货车">
+              <span class="truck-shadow" aria-hidden="true"></span>
+            </div>
+            <div class="vehicle-info">
+              <p class="vehicle-plate">12 · 1235</p>
+              <p class="vehicle-type">箱式货车 · 30吨</p>
+              <span class="badge badge--frozen">冻结</span>
+            </div>
+            <div class="vehicle-actions">
+              <button class="action-btn action-btn--img" aria-label="编辑">
+                <img src="assets/btn-edit.png" alt="">
+              </button>
+              <button class="action-btn" aria-label="删除">
+                <img class="action-icon" src="assets/icon-delete.svg" alt="">
+              </button>
+            </div>
+          </li>
+        </ul>
+      </section>
+
+      <!-- 卡片二：排队历史（近7天）——人工核验修正：单张白卡 + 行间细分隔线 -->
+      <section class="card">
+        <header class="card-header">
+          <span class="card-header-icon"><img src="assets/icon-car-badge.svg" alt=""></span>
+          <h2 class="card-title">排队历史（近7天）</h2>
+        </header>
+
+        <ul class="history-list">
+          <li class="history-item">
+            <div class="history-left">
+              <p class="history-code">A003</p>
+              <div class="history-meta">
+                <span class="history-plate">12 · 1234</span>
+                <span class="badge badge--import">进口</span>
+                <span class="badge badge--unload">卸货</span>
+              </div>
+            </div>
+            <div class="history-right">
+              <p class="history-wait">45分钟</p>
+              <p class="history-date">2026-09-26</p>
+            </div>
+          </li>
+
+          <li class="history-item">
+            <div class="history-left">
+              <p class="history-code">A003</p>
+              <div class="history-meta">
+                <span class="history-plate">12 · 1234</span>
+                <span class="badge badge--export">出口</span>
+                <span class="badge badge--transfer">调装</span>
+              </div>
+            </div>
+            <div class="history-right">
+              <p class="history-wait">45分钟</p>
+              <p class="history-date">2026-09-26</p>
+            </div>
+          </li>
+
+          <li class="history-item">
+            <div class="history-left">
+              <p class="history-code">A003</p>
+              <div class="history-meta">
+                <span class="history-plate">12 · 1234</span>
+                <span class="badge badge--import">进口</span>
+                <span class="badge badge--unload">卸货</span>
+              </div>
+            </div>
+            <div class="history-right">
+              <p class="history-wait">45分钟</p>
+              <p class="history-date">2026-09-26</p>
+            </div>
+          </li>
+
+          <li class="history-item">
+            <div class="history-left">
+              <p class="history-code">A003</p>
+              <div class="history-meta">
+                <span class="history-plate">12 · 1234</span>
+                <span class="badge badge--export">出口</span>
+                <span class="badge badge--transfer">调装</span>
+              </div>
+            </div>
+            <div class="history-right">
+              <p class="history-wait">45分钟</p>
+              <p class="history-date">2026-09-26</p>
+            </div>
+          </li>
+        </ul>
+      </section>
+
+      <!-- 等待时长横幅：位图背景 + 遮盖矩形盖住图中烧死的旧数据(40分钟) + 真值文字层(45分钟)，同设计稿结构 8:125/8:127/8:128/8:129 -->
+      <section class="wait-banner">
+        <span class="banner-cover" aria-hidden="true"></span>
+        <div class="banner-text">
+          <p class="banner-label">近7天平均等待时长</p>
+          <p class="banner-value">45<span class="banner-unit">分钟</span></p>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- 底部 Tab（fixed，高度 70） -->
+  <nav class="tab-bar">
+    <button class="tab-item">
+      <img class="tab-icon" src="assets/tab-home.svg" alt="">
+      <span class="tab-label">首页</span>
+    </button>
+    <button class="tab-item">
+      <img class="tab-icon" src="assets/tab-message.svg" alt="">
+      <span class="tab-label">消息</span>
+    </button>
+    <button class="tab-item tab-item--active">
+      <span class="tab-indicator" aria-hidden="true"></span>
+      <img class="tab-icon" src="assets/tab-mine.svg" alt="">
+      <span class="tab-label">我的</span>
+    </button>
+  </nav>
+</body>
+</html>
