@@ -44,11 +44,14 @@
 | `server/src/daemon/cache.ts` | 画板快照缓存 Map<frameId, FrameSnapshot> + 画板清单缓存 + 节点索引，随 daemon 单例进程持有（多 MCP server 共享一份） | 已验证 |
 | `server/src/mcp/index.ts` | MCP server 装配：stdio 传输 + 工具清单注册 | 规划中 |
 | `server/src/mcp/types.ts` | ToolResult（官方 `{ content, isError? }`）与工具 handler 签名等 mcp 层共享类型 | 规划中 |
-| `server/src/mcp/css-map.ts` | 原语 → CSS 属性对象的纯函数映射（fills 按节点类型分派：TEXT→color、其余→background-color；effects→box-shadow 等；不输出 position/left/top——定位定案 2026-11-17，坐标保真在 raw） | 已验证（单测 7/7 + 真机调用） |
+| `server/src/mcp/css-map.ts` | 原语 → CSS 属性对象的纯函数映射（fills 按节点类型分派：TEXT→color、其余→background-color；effects→box-shadow；lineHeight AUTO 按 1.5×fontSize 实测规律换算 2026-11-17；不输出 position/left/top——定位定案，坐标保真在 raw） | 已验证（单测 7/7 + 真机调用） |
 | `server/src/mcp/css-map.test.ts` | css-map 单测（node:test；fixture 照 api-notes 实测字段结构；含 TEXT color / 定位不输出坐标断言） | 已验证（7/7 过） |
 | `server/src/mcp/tools/list-frames.ts` | 工具 list_frames：全文档画板清单（id/name/尺寸/页名，编排 agent 分活用） | 规划中 |
-| `server/src/mcp/tools/get-structure.ts` | 工具 get_structure(frameId)：单画板轻量结构树（id/name/type/尺寸/层级） | 规划中 |
-| `server/src/mcp/tools/get-node-css.ts` | 工具 get_node_css(nodeId)：按 id 返回单节点 `css`（映射视图）+ `raw`（原语）双轨 JSON | 规划中 |
+| `server/src/mcp/tools/get-structure.ts` | 工具 get_structure(frameId)：单画板轻量结构树（id/name/type/尺寸/层级 + pos 相对坐标 + 容器 layout 推断 + padding/gap 推断——像素级布局参数一次拿全，防绝对定位偷懒） | 已验证（真机回归 + 单测） |
+| `server/src/mcp/get-structure.test.ts` | get_structure 单测（inferLayout row/column/mixed/隐藏剔除 + lightTree pos/padding/gap 推断断言） | 已验证（7/7 过） |
+| `server/src/mcp/tools/get-node-css.ts` | 工具 get_node_css(nodeId)：css（css-map 映射 + 渐变/阴影弱分支自动走 SVG 提取轨）+ raw 双轨 JSON | 已验证（真机回归） |
+| `server/src/mcp/svg-css.ts` | 官方 SVG → 弱分支 CSS 纯函数解析：linearGradient→linear-gradient（方向向量转角度）、filter→box-shadow（stdDeviation×2=blur、feColorMatrix 末列×255=RGB 且跳过 hardAlpha 矩阵、alpha=系数[18]+偏移[19]）；解析失败返回空走 css-map note 兜底 | 已验证（node:test 4/4，真稿样本 fixture） |
+| `server/src/mcp/svg-css.test.ts` | svg-css 单测（真稿阴影 filter 样本 + 渐变角度/stops + 多 gradient warning + 畸形输入） | 已验证（4/4 过） |
 | `server/src/mcp/asset-scan.ts` | 快照树 → 候选资产清单 纯函数扫描（bitmap=IMAGE 填充；vector=纯图形节点；TEXT/含文字组/装饰矩形排除；命中即停不下钻） | 已验证（node:test 4/4） |
 | `server/src/mcp/asset-scan.test.ts` | asset-scan 单测（判定四象限：位图/纯图形/含文字排除/容器下钻） | 已验证（4/4 过） |
 | `server/src/mcp/tools/list-assets.ts` | 工具 list_assets(frameId)：规则化枚举候选资产（替代"AI 猜哪些该切图"），bitmap 逐个导出、vector 按需导 SVG（组件库优先） | 已实现（构建+冒烟过；真机枚举待回填） |

@@ -39,7 +39,7 @@ DocumentNode / PageNode / FrameNode / GroupNode / RectangleNode / EllipseNode / 
 - **官方输出风格情报（2026-11-17 用户截图，"货场管理系统"节点）**：
   - 绝对定位风格：`left/top/width/height` 直接给 px 值（非 flex/transform）——css-map 同样输出 x/y→left/top（ui-restore 像素还原直接可用）
   - `font-weight: 700`：官方同样从字体 style 推导数值（印证 fontWeight 字段不暴露的实测）
-  - `line-height: 26.06px`：`lineHeight:{unit:'AUTO'}` 被官方换算为具体 px——css-map 处理 AUTO 时用 font-size×比例反推公式或保真 raw，探针⑦拿到 AUTO 样本后与官方面板同节点对照定标
+  - `line-height: 26.06px`：`lineHeight:{unit:'AUTO'}` 被官方换算为具体 px——**2026-11-17 已实装：AUTO 按"fontSize × 1.5"换算（车辆管理真稿对照的单点实测规律；TODO 多字体/多字号样本验证）**，css 轨直接输出换算 px 并出 note 标注来源
   - 另输出 `letter-spacing`/`vertical-align`/`text-align`/`opacity`；面板带 CSS/iOS/Android 三平台切换与切图（规范预设）区
 - **官方插件 API 全表面审查（2026-11-17，官方类型包 @jsdesigndeveloper/plugin-typings@1.0.12，npm 机器可读 .d.ts）**：
   - **CSS 生成接口彻底不存在**：全 1194 行类型定义无 getCSSAsync/任何 CSS 输出方法（"style" 命中全为样式库 PaintStyle/TextStyle/EffectStyle/GridStyle 共享样式体系，与 CSS 无关）——类型层 + 探针②运行时层双证，自研 css-map 定案维持
