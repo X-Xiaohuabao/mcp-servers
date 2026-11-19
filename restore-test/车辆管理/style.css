@@ -297,30 +297,43 @@ img { display: block; }
   color: var(--color-text-sub);
 }
 
-/* ---------- 等待时长横幅：位图背景 + 遮盖矩形 + 真值文字层（同设计稿 8:125/8:127/8:128/8:129 结构） ---------- */
+/* ---------- 等待时长横幅：拆图形方案（CSS 渐变底 + 左右纯装饰裁切 + HTML 活文字） ----------
+   弃用「整图背景+遮盖补丁」：8:125 位图整图烧死旧数据「40分钟」，
+   正确做法是拆出无文字图形分别切，文字永远 HTML。banner-wait.png 仅作裁切源保留。 */
 .wait-banner {
-  position: relative;              /* 遮盖层的定位上下文 */
+  position: relative;              /* 装饰层的定位上下文 */
   margin-top: 10px;                /* [结构] 卡二底 642 → 横幅顶 652 */
   height: 85px;                    /* [结构 8:126] 351×85 */
   border-radius: var(--radius-card); /* [近似] */
   overflow: hidden;
-  background-image: url("assets/banner-wait.png"); /* [真值切图 8:125，图中烧死旧数据 40分钟] */
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
+  background: linear-gradient(180deg, #fdf9f0, #fbf6e8); /* [取色] 位图底色近似均匀奶油白 #FBF6E8~#FDF9F0 */
 }
 
-/* 遮盖矩形：[真值 8:127] #FDF7EC 100×60@(143,13)；向四周外扩数 px 盖全烧死文字（平底色区，外扩不可见） */
-.banner-cover {
+/* 左时钟插画：[裁切 banner-wait.png @2x x0~272] 显示 136×85；右缘在纯底色区 mask 渐隐融入 CSS 底色 */
+.banner-deco {
   position: absolute;
-  left: 139px;
-  top: 9px;
-  width: 110px;
-  height: 70px;
-  background: #fdf7ec;
+  top: 0;
+  height: 100%;
+  display: block;
+}
+
+.banner-deco--clock {
+  left: 0;
+  width: 136px;
+  -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent 100%);
+  mask-image: linear-gradient(90deg, #000 88%, transparent 100%);
+}
+
+/* 右柱状图装饰：[裁切 @2x x500~702] 显示 101×85；左缘纯底色区 mask 渐隐 */
+.banner-deco--chart {
+  right: 0;
+  width: 101px;
+  -webkit-mask-image: linear-gradient(270deg, #000 85%, transparent 100%);
+  mask-image: linear-gradient(270deg, #000 85%, transparent 100%);
 }
 
 .banner-text {
-  position: relative;              /* 文字压在遮盖层上 */
+  position: relative;              /* 文字压在装饰层上 */
   z-index: 1;
   padding: 13px 0 0 142px;         /* [结构] label x=154-横幅x12=142，y=665-横幅y652=13 */
   display: flex;
